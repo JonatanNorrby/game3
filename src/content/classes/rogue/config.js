@@ -41,16 +41,6 @@ export const ROGUE_CONFIG = {
       meleeRange: 145,
       castDisplay: 'Instant · melee range · builds Combo Points',
     },
-    knife: {
-      name: 'Knife Throw',
-      description: 'Throw a knife from range for much less damage. Poisoned weapons also poison the knife.',
-      icon: './assets/classes/rogue/abilities/knife-throw.svg',
-      cooldown: 1,
-      damage: 12,
-      range: 650,
-      projectileDuration: 0.2,
-      castDisplay: 'Instant · 650 range',
-    },
     vial: {
       name: 'Prepare Poison',
       description: 'Cast to throw a poison vial to a random playable location. Pick it up to poison your weapons for 18 sec.',
