@@ -1,4 +1,6 @@
 // All Arcane Mage tuning and presentation metadata lives here.
+const MAX_ARCANE_MISSILES = 6;
+
 export const ARCANE_MAGE_CONFIG = {
   id: 'arcane-mage',
   name: 'Arcane Mage',
@@ -10,6 +12,12 @@ export const ARCANE_MAGE_CONFIG = {
     body: '#79b8ff',
     core: '#d8efff',
     anchor: '#78f0dc',
+  },
+  resources: {
+    arcaneMissiles: {
+      name: 'Stored Missiles',
+      max: MAX_ARCANE_MISSILES,
+    },
   },
   abilities: {
     renew: {
@@ -29,20 +37,29 @@ export const ARCANE_MAGE_CONFIG = {
       castTime: 1.1,
       heal: 34,
     },
-    barrage: {
-      name: 'Arcane Barrage',
-      description: 'Instant heavy arcane hit.',
-      icon: './assets/classes/arcane-mage/abilities/arcane-barrage.svg',
-      cooldown: 6,
-      damage: 92,
+    missiles: {
+      legacyIds: ['barrage'],
+      name: 'Arcane Missiles',
+      description: 'Channel every stored missile at the boss while moving. Arcane Bolt stores one missile, up to 6.',
+      icon: './assets/classes/arcane-mage/abilities/arcane-missiles.svg',
+      cooldown: 0,
+      castDisplay: 'Mobile channel · 0.22 sec per missile',
+      resource: 'arcaneMissiles',
+      timePerMissile: 0.22,
+      damagePerMissile: 28,
+      projectileDuration: 0.18,
     },
     filler: {
       name: 'Arcane Bolt',
-      description: 'Your repeatable filler spell.',
+      description: 'Deal 34 damage and store 1 Arcane Missile, up to 6.',
       icon: './assets/classes/arcane-mage/abilities/arcane-bolt.svg',
       cooldown: 0,
       castTime: 0.9,
       damage: 34,
+      generates: {
+        resource: 'arcaneMissiles',
+        amount: 1,
+      },
     },
     teleport: {
       name: 'Recall Anchor',
