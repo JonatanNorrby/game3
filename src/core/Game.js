@@ -5,6 +5,7 @@ import { GAME_CONFIG } from '../config/game.js';
 import { ArcaneMage } from '../content/classes/arcane-mage/ArcaneMage.js';
 import { ARCANE_MAGE_CONFIG } from '../content/classes/arcane-mage/config.js';
 import { BOSS_ROSTER } from '../content/bosses/roster.js';
+import { AbilityBar } from '../ui/AbilityBar.js';
 
 export class Game {
   constructor(canvas, viewport = {}) {
@@ -82,36 +83,30 @@ export class Game {
   }
 
   buildAbilityBar() {
-    this.ui.abilities.innerHTML = '';
-    Object.entries(ARCANE_MAGE_CONFIG.abilities).forEach(([id, ability], index) => {
-      const action = `ability${index + 1}`;
-      const button = document.createElement('button');
-      button.className = 'ability';
-      button.dataset.ability = id;
-      button.dataset.action = action;
-      button.type = 'button';
-      const facts = [];
-      facts.push(ability.castTime ? `${ability.castTime.toFixed(1)} sec cast` : 'Instant');
-      const cooldown = ability.cooldown ?? ability.cooldownAfterRecall ?? 0;
-      facts.push(cooldown > 0 ? `${cooldown} sec cooldown` : 'No cooldown');
-      button.innerHTML = `<img class="ability-icon" src="${ability.icon}" alt="" draggable="false"><span class="ability-key"></span><span class="ability-cd hidden"></span><span class="ability-tooltip" role="tooltip"><strong>${ability.name}</strong><span class="ability-tooltip-description">${ability.description}</span><span class="ability-tooltip-meta">${facts.join(' · ')}</span></span>`;
-      button.setAttribute('aria-label', `${ability.name}: ${ability.description}`);
-      button.addEventListener('click', () => {
-        if (this.state !== 'playing') return;
-        const method = { renew: 'useRenew', directHeal: 'useDirectHeal', barrage: 'useBarrage', filler: 'useFiller', teleport: 'useTeleport' }[id];
-        this.player[method]();
-      });
-      this.ui.abilities.appendChild(button);
+    this.abilityBar = new AbilityBar({
+      container: this.ui.abilities,
+      classId: ARCANE_MAGE_CONFIG.id,
+      abilities: ARCANE_MAGE_CONFIG.abilities,
+      input: this.input,
+      onUse: (abilityId) => {
+        if (this.state === 'playing') this.player.useAbility(abilityId);
+      },
     });
     this.refreshAbilityBindings();
   }
 
   refreshAbilityBindings() {
-    for (const button of this.ui.abilities.querySelectorAll('.ability')) {
-      button.querySelector('.ability-key').textContent = formatKey(this.input.getBinding(button.dataset.action));
-    }
+    this.abilityBar?.refreshBindings();
     const movement = ['moveUp', 'moveLeft', 'moveDown', 'moveRight'].map((action) => formatKey(this.input.getBinding(action))).join('/');
-    this.ui.help.innerHTML = `Move: <b>${movement}</b> · Hover abilities for details`;
+    this.ui.help.innerHTML = `Move: <b>${movement}</b> · Hover for details · <b>Shift + drag</b> abilities to reorder`;
+  }
+
+  handleAbilityInput() {
+    for (let slot = 0; slot < this.abilityBar.slotCount; slot += 1) {
+      if (!this.input.consumeAction(`ability${slot + 1}`)) continue;
+      const abilityId = this.abilityBar.getAbilityIdAtSlot(slot);
+      if (abilityId) this.player.useAbility(abilityId);
+    }
   }
 
   enterMenu() {
@@ -153,6 +148,7 @@ export class Game {
     this.time += dt;
     if (this.state === 'playing') {
       this.player.update(dt, this.input);
+      this.handleAbilityInput();
       this.boss.update(dt);
       this.updateParticles(dt);
       this.camera.update(dt, this.player);
@@ -272,13 +268,7 @@ export class Game {
     this.ui.encounterLabel.textContent = `Boss ${this.bossIndex + 1} / ${this.roster.length}`;
     this.updateCastUI(this.ui.bossCastWrap, this.ui.bossCastName, this.ui.bossCastTime, this.ui.bossCast, this.boss.cast);
     this.updateCastUI(this.ui.playerCastWrap, this.ui.playerCastName, this.ui.playerCastTime, this.ui.playerCast, this.player.cast);
-    for (const button of this.ui.abilities.querySelectorAll('.ability')) {
-      const id = button.dataset.ability;
-      const cd = this.player.cooldowns[id] ?? 0;
-      const overlay = button.querySelector('.ability-cd');
-      if (cd > 0.05) { overlay.textContent = cd.toFixed(cd < 1 ? 1 : 0); overlay.classList.remove('hidden'); }
-      else overlay.classList.add('hidden');
-    }
+    this.abilityBar.updateCooldowns(this.player.cooldowns);
   }
 
   updateCastUI(wrap, name, time, fill, cast) {
