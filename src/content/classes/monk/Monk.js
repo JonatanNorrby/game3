@@ -21,8 +21,6 @@ export class Monk {
     this.comboStarter = null;
     this.shield = { amount: 0, remaining: 0 };
     this.speedBoost = { multiplier: 1, remaining: 0 };
-    this.currentMove = null;
-    this.lastMove = { x: 0, y: -1 };
     this.alive = true;
   }
 
@@ -39,26 +37,19 @@ export class Monk {
 
     const dx = (input.isActionHeld('moveRight') ? 1 : 0) - (input.isActionHeld('moveLeft') ? 1 : 0);
     const dy = (input.isActionHeld('moveDown') ? 1 : 0) - (input.isActionHeld('moveUp') ? 1 : 0);
-    this.currentMove = null;
 
     if (dx !== 0 || dy !== 0) {
       const length = Math.hypot(dx, dy);
-      this.currentMove = { x: dx / length, y: dy / length };
-      this.lastMove = this.currentMove;
       const moveSpeed = C.moveSpeed * this.speedBoost.multiplier;
-      this.x += this.currentMove.x * moveSpeed * dt;
-      this.y += this.currentMove.y * moveSpeed * dt;
+      this.x += (dx / length) * moveSpeed * dt;
+      this.y += (dy / length) * moveSpeed * dt;
       this.clampPosition();
       this.resolveBossCollision();
     }
   }
 
   useAbility(id) {
-    if (COLOR_ABILITY_IDS.includes(id)) {
-      this.useColorStrike(id);
-      return;
-    }
-    if (id === 'roll') this.useRoll();
+    if (COLOR_ABILITY_IDS.includes(id)) this.useColorStrike(id);
   }
 
   canUse(id) {
@@ -186,35 +177,6 @@ export class Monk {
 
     this.speedBoost.remaining = Math.max(0, this.speedBoost.remaining - dt);
     if (this.speedBoost.remaining <= 0) this.speedBoost.multiplier = 1;
-  }
-
-  useRoll() {
-    const id = 'roll';
-    const ability = C.abilities[id];
-    if (!this.canUse(id)) return;
-
-    this.cooldowns[id] = ability.cooldown;
-    let direction = this.currentMove;
-    if (!direction) {
-      const towardBoss = this.directionToBoss();
-      direction = { x: -towardBoss.x, y: -towardBoss.y };
-    }
-
-    this.game.spawnBurst(this.x, this.y, '#f2dfaa', 30);
-    this.x += direction.x * ability.distance;
-    this.y += direction.y * ability.distance;
-    this.clampPosition();
-    this.resolveBossCollision();
-    this.game.spawnBurst(this.x, this.y, '#f2dfaa', 30);
-  }
-
-  directionToBoss() {
-    const boss = this.game.boss;
-    if (!boss) return { x: 0, y: -1 };
-    const dx = boss.x - this.x;
-    const dy = boss.y - this.y;
-    const length = Math.hypot(dx, dy) || 1;
-    return { x: dx / length, y: dy / length };
   }
 
   colorLabel(color) {
