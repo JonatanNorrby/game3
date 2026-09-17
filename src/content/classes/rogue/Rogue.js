@@ -1,5 +1,6 @@
 import { clamp, distance } from '../../../core/geometry.js';
 import { findRandomPlayablePosition, isPositionPlayable } from '../../../core/playableArea.js';
+import { drawMeleeRangeIndicator } from '../../../core/meleeRangeIndicator.js';
 import { ROGUE_CONFIG as C } from './config.js';
 
 export class Rogue {
@@ -332,6 +333,9 @@ export class Rogue {
   }
 
   draw(ctx) {
+    const meleeRange = Math.max(C.abilities.slash.meleeRange, C.abilities.execute.meleeRange);
+    drawMeleeRangeIndicator(ctx, this.game, this, meleeRange);
+
     if (this.vial) {
       ctx.save();
       ctx.translate(this.vial.x, this.vial.y);
