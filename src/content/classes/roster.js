@@ -4,6 +4,8 @@ import { Paladin } from './paladin/Paladin.js';
 import { PALADIN_CONFIG } from './paladin/config.js';
 import { Hunter } from './hunter/Hunter.js';
 import { HUNTER_CONFIG } from './hunter/config.js';
+import { Rogue } from './rogue/Rogue.js';
+import { ROGUE_CONFIG } from './rogue/config.js';
 
 export const CLASS_ROSTER = [
   {
@@ -29,5 +31,13 @@ export const CLASS_ROSTER = [
     description: 'Build Fury with Bow Shot, coordinate a damageable Tiger companion, and choose when to expose or recall the pet during raid mechanics.',
     PlayerClass: Hunter,
     config: HUNTER_CONFIG,
+  },
+  {
+    id: ROGUE_CONFIG.id,
+    name: ROGUE_CONFIG.name,
+    role: ROGUE_CONFIG.role,
+    description: 'Run in and out of melee, retrieve poison vials, sustain through poison lifesteal, and turn poison uptime into more frequent Sprints.',
+    PlayerClass: Rogue,
+    config: ROGUE_CONFIG,
   },
 ];
