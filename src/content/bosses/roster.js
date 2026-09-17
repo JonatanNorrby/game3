@@ -4,6 +4,8 @@ import { Bellkeeper } from './bellkeeper/Bellkeeper.js';
 import { BELLKEEPER_CONFIG } from './bellkeeper/config.js';
 import { Astronomer } from './astronomer/Astronomer.js';
 import { ASTRONOMER_CONFIG } from './astronomer/config.js';
+import { FurnaceHeart } from './furnace-heart/FurnaceHeart.js';
+import { FURNACE_HEART_CONFIG } from './furnace-heart/config.js';
 
 // Boss progression lives here. Each entry exposes its config so the game can
 // configure arena dimensions before spawning the player or boss.
@@ -34,5 +36,14 @@ export const BOSS_ROSTER = [
     unlockRequirement: null,
     config: ASTRONOMER_CONFIG,
     BossClass: Astronomer,
+  },
+  {
+    id: FURNACE_HEART_CONFIG.id,
+    name: FURNACE_HEART_CONFIG.name,
+    description: 'Your own spellcasting raises Heat: burst while the Heart is overexposed, then cool down as more furnace sectors ignite around you.',
+    unlocked: true,
+    unlockRequirement: null,
+    config: FURNACE_HEART_CONFIG,
+    BossClass: FurnaceHeart,
   },
 ];
