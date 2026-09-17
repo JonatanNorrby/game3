@@ -15,6 +15,7 @@ export class ArcaneMage {
     this.health = C.maxHealth;
     this.cooldowns = {};
     this.effects = [];
+    this.resources = Object.fromEntries(Object.keys(C.resources ?? {}).map((id) => [id, 0]));
     this.cast = null;
     this.anchor = null;
     this.alive = true;
@@ -33,7 +34,7 @@ export class ArcaneMage {
       this.y += (dy / length) * C.moveSpeed * dt;
       this.x = clamp(this.x, 30, this.game.worldWidth - 30);
       this.y = clamp(this.y, 30, this.game.worldHeight - 30);
-      if (this.cast) this.cancelCast();
+      if (this.cast && !this.cast.canMove) this.cancelCast();
     }
     this.updateCast(dt);
   }
@@ -42,11 +43,36 @@ export class ArcaneMage {
     const method = {
       renew: 'useRenew',
       directHeal: 'useDirectHeal',
-      barrage: 'useBarrage',
+      missiles: 'useArcaneMissiles',
+      barrage: 'useArcaneMissiles',
       filler: 'useFiller',
       teleport: 'useTeleport',
     }[id];
     if (method) this[method]();
+  }
+
+  getResource(id) {
+    return this.resources[id] ?? 0;
+  }
+
+  addResource(id, amount) {
+    const config = C.resources?.[id];
+    if (!config) return 0;
+    const next = clamp(this.getResource(id) + amount, 0, config.max);
+    this.resources[id] = next;
+    return next;
+  }
+
+  getAbilityResourceState(abilityId) {
+    const resourceId = C.abilities[abilityId]?.resource;
+    if (!resourceId) return null;
+    const config = C.resources?.[resourceId];
+    if (!config) return null;
+    return {
+      current: this.getResource(resourceId),
+      max: config.max,
+      label: config.name,
+    };
   }
 
   canUse(id) { return this.alive && !this.cast && (this.cooldowns[id] ?? 0) <= 0 && this.game.boss?.alive; }
@@ -69,12 +95,27 @@ export class ArcaneMage {
     });
   }
 
-  useBarrage() {
-    if (!this.canUse('barrage')) return;
-    const a = C.abilities.barrage;
-    this.cooldowns.barrage = a.cooldown;
-    this.game.damageBoss(a.damage, 'Arcane Barrage');
-    this.game.spawnProjectile(this, this.game.boss, C.visual.body, 0.22);
+  useArcaneMissiles() {
+    const a = C.abilities.missiles;
+    if (!this.canUse('missiles')) return;
+
+    const missileCount = this.getResource(a.resource);
+    if (missileCount <= 0) {
+      this.game.flashMessage('Cast Arcane Bolt to store missiles');
+      return;
+    }
+
+    this.resources[a.resource] = 0;
+    this.startCast('missiles', `${a.name} ×${missileCount}`, a.timePerMissile * missileCount, null, {
+      canMove: true,
+      tickEvery: a.timePerMissile,
+      ticks: missileCount,
+      onTick: () => {
+        if (!this.alive || !this.game.boss?.alive) return;
+        this.game.damageBoss(a.damagePerMissile, a.name);
+        this.game.spawnProjectile(this, this.game.boss, '#b5a1ff', a.projectileDuration);
+      },
+    });
   }
 
   useFiller() {
@@ -83,6 +124,14 @@ export class ArcaneMage {
     this.startCast('filler', a.name, a.castTime, () => {
       this.game.damageBoss(a.damage, 'Arcane Bolt');
       this.game.spawnProjectile(this, this.game.boss, '#a99dff', 0.28);
+
+      const resourceId = a.generates.resource;
+      const before = this.getResource(resourceId);
+      const after = this.addResource(resourceId, a.generates.amount);
+      if (after > before) {
+        const max = C.resources[resourceId].max;
+        this.game.spawnFloatingText(this.x, this.y - 48, `Missiles ${after}/${max}`, '#c8b8ff');
+      }
     });
   }
 
@@ -104,20 +153,46 @@ export class ArcaneMage {
     this.game.flashMessage('Recalled');
   }
 
-  startCast(id, name, duration, onComplete) { this.cast = { id, name, duration, remaining: duration, onComplete }; }
+  startCast(id, name, duration, onComplete, options = {}) {
+    this.cast = {
+      id,
+      name,
+      duration,
+      remaining: duration,
+      onComplete,
+      canMove: options.canMove === true,
+      onTick: options.onTick ?? null,
+      tickEvery: options.tickEvery ?? 0,
+      tickTimer: options.tickEvery ?? 0,
+      ticksRemaining: options.ticks ?? 0,
+    };
+  }
+
   cancelCast() {
     if (!this.cast) return;
     this.game.flashMessage(`${this.cast.name} interrupted by movement`);
     this.cast = null;
   }
+
   updateCast(dt) {
     if (!this.cast) return;
-    this.cast.remaining -= dt;
-    if (this.cast.remaining > 0) return;
-    const complete = this.cast.onComplete;
+    const cast = this.cast;
+    cast.remaining -= dt;
+
+    if (cast.onTick && cast.tickEvery > 0 && cast.ticksRemaining > 0) {
+      cast.tickTimer -= dt;
+      while (cast.tickTimer <= 0 && cast.ticksRemaining > 0) {
+        cast.tickTimer += cast.tickEvery;
+        cast.ticksRemaining -= 1;
+        cast.onTick();
+      }
+    }
+
+    if (cast.remaining > 0 || cast.ticksRemaining > 0) return;
     this.cast = null;
-    complete();
+    cast.onComplete?.();
   }
+
   updateEffects(dt) {
     const renew = C.abilities.renew;
     for (const effect of this.effects) {
@@ -130,11 +205,13 @@ export class ArcaneMage {
     }
     this.effects = this.effects.filter((effect) => effect.remaining > 0);
   }
+
   heal(amount) {
     if (!this.alive) return;
     this.health = Math.min(C.maxHealth, this.health + amount);
     this.game.spawnFloatingText(this.x, this.y - 26, `+${amount}`, '#82f2a8');
   }
+
   takeDamage(amount, source = 'Damage') {
     if (!this.alive) return;
     this.health = Math.max(0, this.health - amount);
@@ -146,6 +223,7 @@ export class ArcaneMage {
       this.game.onPlayerDefeated(source);
     }
   }
+
   draw(ctx) {
     if (this.anchor) {
       const pulse = 9 + Math.sin(this.game.time * 5) * 3;
