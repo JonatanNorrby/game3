@@ -1,4 +1,5 @@
 import { clamp, distance } from '../../../core/geometry.js';
+import { drawMeleeRangeIndicator } from '../../../core/meleeRangeIndicator.js';
 import { DRUID_CONFIG as C } from './config.js';
 
 const FORM_ABILITY_IDS = ['bearForm', 'monkeyForm', 'pumaForm', 'pandaForm'];
@@ -85,12 +86,17 @@ export class Druid {
     this.game.requestAbilityBarRebuild?.();
   }
 
+  getTarget() {
+    return this.game.getCombatTarget?.() ?? this.game.boss ?? null;
+  }
+
   canUse(id) {
     return this.alive && !this.cast && (this.cooldowns[id] ?? 0) <= 0 && this.game.boss?.alive;
   }
 
   isInMeleeRange(range) {
-    return Boolean(this.game.boss?.alive) && distance(this, this.game.boss) <= range;
+    const target = this.getTarget();
+    return Boolean(target?.alive !== false) && distance(this, target) <= range;
   }
 
   getAbilityAvailability(id) {
@@ -114,8 +120,9 @@ export class Druid {
     const a = C.abilities[id];
     if (!this.canUse(id) || !this.isInMeleeRange(a.meleeRange)) return;
     this.cooldowns[id] = a.cooldown;
+    const target = this.getTarget();
     this.game.damageBoss(a.damage, a.name);
-    this.game.spawnBurst(this.game.boss.x, this.game.boss.y, C.visual.bear, 34);
+    if (target) this.game.spawnBurst(target.x, target.y, C.visual.bear, 34);
   }
 
   useEarthbreaker() {
@@ -123,8 +130,9 @@ export class Druid {
     const a = C.abilities[id];
     if (!this.canUse(id) || !this.isInMeleeRange(a.meleeRange)) return;
     this.cooldowns[id] = a.cooldown;
+    const target = this.getTarget();
     this.game.damageBoss(a.damage, a.name);
-    this.game.spawnBurst(this.game.boss.x, this.game.boss.y, '#d8aa72', 72);
+    if (target) this.game.spawnBurst(target.x, target.y, '#d8aa72', 72);
     this.game.shake = Math.max(this.game.shake, 7);
   }
 
@@ -151,8 +159,9 @@ export class Druid {
     const a = C.abilities[id];
     if (!this.canUse(id) || !this.isInMeleeRange(a.meleeRange)) return;
     this.cooldowns[id] = a.cooldown;
+    const target = this.getTarget();
     this.game.damageBoss(a.damage, a.name);
-    this.game.spawnBurst(this.game.boss.x, this.game.boss.y, C.visual.puma, 24);
+    if (target) this.game.spawnBurst(target.x, target.y, C.visual.puma, 24);
   }
 
   useRake() {
@@ -160,8 +169,9 @@ export class Druid {
     const a = C.abilities[id];
     if (!this.canUse(id) || !this.isInMeleeRange(a.meleeRange)) return;
     this.cooldowns[id] = a.cooldown;
+    const target = this.getTarget();
     this.game.damageBoss(a.damage, a.name);
-    this.game.spawnBurst(this.game.boss.x, this.game.boss.y, '#b49ce9', 30);
+    if (target) this.game.spawnBurst(target.x, target.y, '#b49ce9', 30);
   }
 
   useSoothingPaw() {
@@ -286,6 +296,12 @@ export class Druid {
 
   draw(ctx) {
     const form = this.form ?? 'caster';
+    const formAbilities = this.form ? C.forms[this.form].abilities : [];
+    const meleeRanges = formAbilities
+      .map((id) => C.abilities[id]?.meleeRange)
+      .filter((range) => Number.isFinite(range) && range > 0);
+    drawMeleeRangeIndicator(ctx, this.game, this, meleeRanges.length ? Math.max(...meleeRanges) : 0);
+
     const bodyColor = C.visual[form];
     ctx.save();
     ctx.translate(this.x, this.y);
