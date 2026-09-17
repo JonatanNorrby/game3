@@ -4,11 +4,14 @@ import { ARCANE_MAGE_CONFIG } from '../content/classes/arcane-mage/config.js';
 import { ArcaneWarden } from '../content/bosses/arcane-warden/ArcaneWarden.js';
 
 export class Game {
-  constructor(canvas) {
+  constructor(canvas, viewport = {}) {
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d');
-    this.width = canvas.width;
-    this.height = canvas.height;
+    this.width = Math.max(1, Math.round(viewport.width ?? window.innerWidth ?? 1280));
+    this.height = Math.max(1, Math.round(viewport.height ?? window.innerHeight ?? 720));
+    this.pixelRatio = Math.max(1, Math.min(viewport.pixelRatio ?? window.devicePixelRatio ?? 1, 2));
+    this.configureSurface();
+
     this.input = new Input();
     this.time = 0;
     this.lastTime = performance.now();
@@ -29,6 +32,53 @@ export class Game {
     this.buildAbilityBar();
     this.bindUI();
     this.updateUI();
+  }
+
+  configureSurface() {
+    this.canvas.width = Math.max(1, Math.round(this.width * this.pixelRatio));
+    this.canvas.height = Math.max(1, Math.round(this.height * this.pixelRatio));
+    this.canvas.style.width = `${this.width}px`;
+    this.canvas.style.height = `${this.height}px`;
+    this.ctx.setTransform(this.pixelRatio, 0, 0, this.pixelRatio, 0, 0);
+  }
+
+  resizeViewport(viewport = {}) {
+    const nextWidth = Math.max(1, Math.round(viewport.width ?? this.width));
+    const nextHeight = Math.max(1, Math.round(viewport.height ?? this.height));
+    const nextPixelRatio = Math.max(1, Math.min(viewport.pixelRatio ?? this.pixelRatio, 2));
+
+    const scaleX = nextWidth / this.width;
+    const scaleY = nextHeight / this.height;
+
+    this.width = nextWidth;
+    this.height = nextHeight;
+    this.pixelRatio = nextPixelRatio;
+    this.configureSurface();
+
+    const scalePoint = (point) => {
+      if (!point) return;
+      point.x *= scaleX;
+      point.y *= scaleY;
+    };
+
+    scalePoint(this.player);
+    scalePoint(this.player?.anchor);
+    scalePoint(this.boss);
+
+    for (const projectile of this.projectiles) {
+      projectile.sx *= scaleX;
+      projectile.sy *= scaleY;
+      projectile.ex *= scaleX;
+      projectile.ey *= scaleY;
+    }
+
+    for (const effect of this.effects) {
+      if (typeof effect.x === 'number') effect.x *= scaleX;
+      if (typeof effect.y === 'number') effect.y *= scaleY;
+    }
+
+    for (const text of this.floatingTexts) scalePoint(text);
+    for (const zone of this.boss?.cast?.zones ?? []) scalePoint(zone);
   }
 
   cacheUI() {
@@ -155,6 +205,8 @@ export class Game {
 
   draw() {
     const ctx = this.ctx;
+    ctx.setTransform(this.pixelRatio, 0, 0, this.pixelRatio, 0, 0);
+    ctx.clearRect(0, 0, this.width, this.height);
     ctx.save();
     const sx = this.shake ? (Math.random() - 0.5) * this.shake : 0;
     const sy = this.shake ? (Math.random() - 0.5) * this.shake : 0;
@@ -183,7 +235,7 @@ export class Game {
     ctx.strokeRect(10, 10, this.width - 20, this.height - 20);
     ctx.strokeStyle = 'rgba(155,105,230,.14)';
     ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.arc(this.width / 2, this.height / 2, 245, 0, Math.PI * 2); ctx.stroke();
+    ctx.beginPath(); ctx.arc(this.width / 2, this.height / 2, Math.min(this.width, this.height) * 0.34, 0, Math.PI * 2); ctx.stroke();
   }
 
   drawProjectiles(ctx) {
@@ -240,7 +292,7 @@ export class Game {
     ctx.fillStyle = '#eef2ff';
     ctx.shadowBlur = 12;
     ctx.shadowColor = '#000';
-    ctx.fillText(this.flashText, this.width / 2, 86);
+    ctx.fillText(this.flashText, this.width / 2, 128);
     ctx.restore();
   }
 
