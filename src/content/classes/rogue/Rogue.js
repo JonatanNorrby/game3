@@ -19,7 +19,8 @@ export class Rogue {
     this.cast = null;
     this.vial = null;
     this.weaponPoisonRemaining = 0;
-    this.bossPoison = null;
+    this.targetPoisons = new Map();
+    this.comboPoints = 0;
     this.sprintRemaining = 0;
     this.alive = true;
   }
@@ -29,7 +30,7 @@ export class Rogue {
     for (const key of Object.keys(this.cooldowns)) this.cooldowns[key] = Math.max(0, this.cooldowns[key] - dt);
     this.weaponPoisonRemaining = Math.max(0, this.weaponPoisonRemaining - dt);
     this.sprintRemaining = Math.max(0, this.sprintRemaining - dt);
-    this.updateBossPoison(dt);
+    this.updateTargetPoisons(dt);
     this.updateVial();
 
     const dx = (input.isActionHeld('moveRight') ? 1 : 0) - (input.isActionHeld('moveLeft') ? 1 : 0);
@@ -56,25 +57,53 @@ export class Rogue {
       knife: 'useKnife',
       vial: 'useVial',
       sprint: 'useSprint',
+      execute: 'useExecute',
     }[id];
     if (method) this[method]();
+  }
+
+  getTarget() {
+    return this.game.getCombatTarget?.() ?? this.game.boss ?? null;
   }
 
   canUse(id) {
     return this.alive && !this.cast && (this.cooldowns[id] ?? 0) <= 0 && this.game.boss?.alive;
   }
 
+  isTargetPoisoned(target) {
+    return Boolean(target && (this.targetPoisons.get(target)?.remaining ?? 0) > 0);
+  }
+
   getAbilityAvailability(id) {
     const ability = C.abilities[id];
     if (!ability) return { available: false, reason: 'Unavailable' };
-    if (id === 'slash' && this.game.boss && distance(this, this.game.boss) > ability.meleeRange) {
+    const target = this.getTarget();
+
+    if ((id === 'slash' || id === 'execute') && target && distance(this, target) > ability.meleeRange) {
       return { available: false, reason: 'Move into melee range' };
     }
-    if (id === 'knife' && this.game.boss && distance(this, this.game.boss) > ability.range) {
+    if (id === 'knife' && target && distance(this, target) > ability.range) {
       return { available: false, reason: 'Target out of range' };
     }
     if (id === 'vial' && this.vial) return { available: false, reason: 'Pick up the active poison vial first' };
+    if (id === 'execute') {
+      if (this.comboPoints < ability.comboPointCost) {
+        return { available: false, reason: `Need ${ability.comboPointCost} Combo Points` };
+      }
+      if (!this.isTargetPoisoned(target)) {
+        return { available: false, reason: 'Target must be poisoned' };
+      }
+    }
     return { available: true };
+  }
+
+  getAbilityResourceState(id) {
+    if (id !== 'execute') return null;
+    return {
+      current: this.comboPoints,
+      max: C.comboPoints.max,
+      label: 'Combo Points',
+    };
   }
 
   getPrimaryResourceState() {
@@ -87,30 +116,46 @@ export class Rogue {
     };
   }
 
+  addComboPoint(amount = 1) {
+    const before = this.comboPoints;
+    this.comboPoints = clamp(this.comboPoints + amount, 0, C.comboPoints.max);
+    const gained = this.comboPoints - before;
+    if (gained > 0) {
+      this.game.spawnFloatingText(this.x, this.y - 48, `+${gained} Combo`, C.visual.execute);
+    }
+  }
+
   useSlash() {
     const a = C.abilities.slash;
     if (!this.canUse('slash')) return;
-    if (distance(this, this.game.boss) > a.meleeRange) {
+    const target = this.getTarget();
+    if (!target) return;
+    if (distance(this, target) > a.meleeRange) {
       this.game.flashMessage('Move closer to Slash');
       return;
     }
+
+    const wasPoisoned = this.isTargetPoisoned(target);
     this.cooldowns.slash = a.cooldown;
     this.game.damageBoss(a.damage, a.name);
-    this.game.spawnBurst(this.game.boss.x, this.game.boss.y, this.weaponPoisonRemaining > 0 ? C.visual.poison : C.visual.core, 34);
-    this.applyWeaponPoison();
+    this.game.spawnBurst(target.x, target.y, this.weaponPoisonRemaining > 0 ? C.visual.poison : C.visual.core, 34);
+    if (wasPoisoned) this.addComboPoint(C.comboPoints.gainPerPoisonedSlash);
+    this.applyWeaponPoison(target);
   }
 
   useKnife() {
     const a = C.abilities.knife;
     if (!this.canUse('knife')) return;
-    if (distance(this, this.game.boss) > a.range) {
+    const target = this.getTarget();
+    if (!target) return;
+    if (distance(this, target) > a.range) {
       this.game.flashMessage('Target out of Knife Throw range');
       return;
     }
     this.cooldowns.knife = a.cooldown;
     this.game.damageBoss(a.damage, a.name);
-    this.game.spawnProjectile(this, this.game.boss, this.weaponPoisonRemaining > 0 ? C.visual.poison : C.visual.core, a.projectileDuration);
-    this.applyWeaponPoison();
+    this.game.spawnProjectile(this, target, this.weaponPoisonRemaining > 0 ? C.visual.poison : C.visual.core, a.projectileDuration);
+    this.applyWeaponPoison(target);
   }
 
   useVial() {
@@ -130,6 +175,31 @@ export class Rogue {
     this.cooldowns.sprint = a.cooldown;
     this.sprintRemaining = a.duration;
     this.game.flashMessage('Sprint');
+  }
+
+  useExecute() {
+    const a = C.abilities.execute;
+    if (!this.canUse('execute')) return;
+    const target = this.getTarget();
+    if (!target) return;
+    if (distance(this, target) > a.meleeRange) {
+      this.game.flashMessage('Move closer to Execute');
+      return;
+    }
+    if (this.comboPoints < a.comboPointCost) {
+      this.game.flashMessage(`Need ${a.comboPointCost} Combo Points`);
+      return;
+    }
+    if (!this.isTargetPoisoned(target)) {
+      this.game.flashMessage('Execute requires a poisoned target');
+      return;
+    }
+
+    this.comboPoints = Math.max(0, this.comboPoints - a.comboPointCost);
+    this.cooldowns.execute = a.cooldown;
+    this.game.damageBoss(a.damage, a.name);
+    this.game.spawnBurst(target.x, target.y, C.visual.execute, 68);
+    this.game.flashMessage('EXECUTE');
   }
 
   spawnVial() {
@@ -160,31 +230,36 @@ export class Rogue {
     }
   }
 
-  applyWeaponPoison() {
-    if (this.weaponPoisonRemaining <= 0) return;
-    this.bossPoison = {
+  applyWeaponPoison(target = this.getTarget()) {
+    if (this.weaponPoisonRemaining <= 0 || !target) return;
+    const existing = this.targetPoisons.get(target);
+    this.targetPoisons.set(target, {
       remaining: C.poison.targetDuration,
-      tickTimer: C.poison.tickEvery,
-    };
+      tickTimer: existing?.tickTimer ?? C.poison.tickEvery,
+    });
   }
 
-  updateBossPoison(dt) {
-    if (!this.bossPoison || !this.game.boss?.alive) {
-      if (!this.game.boss?.alive) this.bossPoison = null;
-      return;
-    }
+  updateTargetPoisons(dt) {
+    for (const [target, poison] of this.targetPoisons) {
+      if (!target || target.alive === false || target.targetable === false || typeof target.takeDamage !== 'function') {
+        this.targetPoisons.delete(target);
+        continue;
+      }
 
-    this.bossPoison.remaining -= dt;
-    this.bossPoison.tickTimer -= dt;
-    while (this.bossPoison.tickTimer <= 0 && this.bossPoison.remaining > -0.001) {
-      this.bossPoison.tickTimer += C.poison.tickEvery;
-      this.game.damageBoss(C.poison.damagePerTick, 'Poison');
-      this.heal(C.poison.damagePerTick * C.poison.lifestealPercent);
-      this.cooldowns.sprint = Math.max(0, (this.cooldowns.sprint ?? 0) - C.poison.sprintCooldownReductionPerTick);
-      this.game.spawnBurst(this.game.boss.x, this.game.boss.y, C.visual.poison, 24);
-    }
+      poison.remaining -= dt;
+      poison.tickTimer -= dt;
+      while (poison.tickTimer <= 0 && poison.remaining > -0.001 && target.alive !== false) {
+        poison.tickTimer += C.poison.tickEvery;
+        target.takeDamage(C.poison.damagePerTick, 'Poison');
+        this.heal(C.poison.damagePerTick * C.poison.lifestealPercent);
+        this.cooldowns.sprint = Math.max(0, (this.cooldowns.sprint ?? 0) - C.poison.sprintCooldownReductionPerTick);
+        this.game.spawnBurst(target.x, target.y, C.visual.poison, 24);
+      }
 
-    if (this.bossPoison.remaining <= 0) this.bossPoison = null;
+      if (poison.remaining <= 0 || target.alive === false || target.targetable === false) {
+        this.targetPoisons.delete(target);
+      }
+    }
   }
 
   startCast(id, name, duration, onComplete) {
@@ -261,13 +336,14 @@ export class Rogue {
       ctx.restore();
     }
 
-    if (this.bossPoison && this.game.boss?.alive) {
+    for (const [target, poison] of this.targetPoisons) {
+      if (poison.remaining <= 0 || target.alive === false || target.targetable === false) continue;
       ctx.save();
       ctx.strokeStyle = C.visual.poison;
       ctx.globalAlpha = 0.65;
       ctx.lineWidth = 3;
       ctx.beginPath();
-      ctx.arc(this.game.boss.x, this.game.boss.y, (this.game.boss.config?.radius ?? 40) + 13, 0, Math.PI * 2);
+      ctx.arc(target.x, target.y, (target.config?.radius ?? target.radius ?? 40) + 13, 0, Math.PI * 2);
       ctx.stroke();
       ctx.restore();
     }
@@ -281,6 +357,16 @@ export class Rogue {
       ctx.beginPath();
       ctx.arc(0, 0, C.radius + 9, 0, Math.PI * 2);
       ctx.stroke();
+    }
+    if (this.comboPoints > 0) {
+      const pipRadius = C.radius + 14;
+      for (let i = 0; i < C.comboPoints.max; i += 1) {
+        const angle = -Math.PI * 0.8 + i * (Math.PI * 0.53);
+        ctx.fillStyle = i < this.comboPoints ? C.visual.execute : '#3a3049';
+        ctx.beginPath();
+        ctx.arc(Math.cos(angle) * pipRadius, Math.sin(angle) * pipRadius, 3.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
     }
     if (this.weaponPoisonRemaining > 0) {
       ctx.shadowBlur = 18;
