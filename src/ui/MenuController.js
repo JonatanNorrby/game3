@@ -10,15 +10,18 @@ export class MenuController {
     this.overlay = document.getElementById('menu-overlay');
     this.views = {
       main: document.getElementById('menu-main'),
+      classes: document.getElementById('menu-classes'),
       bosses: document.getElementById('menu-bosses'),
       settings: document.getElementById('menu-settings'),
     };
+    this.classList = document.getElementById('class-list');
     this.bossList = document.getElementById('boss-list');
     this.keybindList = document.getElementById('keybind-list');
     this.versionLabels = document.querySelectorAll('[data-game-version]');
 
     this.bindStaticButtons();
     this.game.input.onBindingsChanged(() => this.renderKeybinds());
+    this.renderClasses();
     this.renderBosses();
     this.renderKeybinds();
     this.versionLabels.forEach((element) => { element.textContent = `v${GAME_CONFIG.version}`; });
@@ -26,9 +29,10 @@ export class MenuController {
   }
 
   bindStaticButtons() {
-    document.getElementById('menu-play').addEventListener('click', () => this.show('bosses'));
+    document.getElementById('menu-play').addEventListener('click', () => this.show('classes'));
     document.getElementById('menu-settings-button').addEventListener('click', () => this.show('settings'));
-    document.getElementById('boss-back').addEventListener('click', () => this.show('main'));
+    document.getElementById('class-back').addEventListener('click', () => this.show('main'));
+    document.getElementById('boss-back').addEventListener('click', () => this.show('classes'));
     document.getElementById('settings-back').addEventListener('click', () => this.show('main'));
     document.getElementById('reset-keybinds').addEventListener('click', () => this.game.input.resetBindings());
     document.getElementById('hud-menu-button').addEventListener('click', () => this.openMain());
@@ -52,6 +56,7 @@ export class MenuController {
     for (const [name, element] of Object.entries(this.views)) {
       element.classList.toggle('hidden', name !== viewName);
     }
+    if (viewName === 'classes') this.renderClasses();
     if (viewName === 'bosses') this.renderBosses();
     if (viewName === 'settings') this.renderKeybinds();
   }
@@ -66,13 +71,29 @@ export class MenuController {
     });
   }
 
+  renderClasses() {
+    this.classList.innerHTML = '';
+    this.game.classRoster.forEach((entry, index) => {
+      const selected = index === this.game.classIndex;
+      const card = document.createElement('button');
+      card.className = `boss-card class-card${selected ? ' selected' : ''}`;
+      card.innerHTML = `<span class="boss-card-title">${entry.name}</span><span class="class-card-role">${entry.role}</span><span class="boss-card-description">${entry.description}</span><span class="boss-card-state">${selected ? 'Selected · Continue' : 'Choose class'}</span>`;
+      card.addEventListener('click', () => {
+        this.game.selectClass(index);
+        this.renderKeybinds();
+        this.show('bosses');
+      });
+      this.classList.appendChild(card);
+    });
+  }
+
   renderBosses() {
     this.bossList.innerHTML = '';
     this.bossRoster.forEach((entry, index) => {
       const card = document.createElement('button');
       card.className = `boss-card${entry.unlocked ? '' : ' locked'}`;
       card.disabled = !entry.unlocked;
-      card.innerHTML = `<span class="boss-card-title">${entry.name}</span><span class="boss-card-description">${entry.description}</span><span class="boss-card-state">${entry.unlocked ? 'Fight boss' : `Locked${entry.unlockRequirement ? ` · ${entry.unlockRequirement}` : ''}`}</span>`;
+      card.innerHTML = `<span class="boss-card-title">${entry.name}</span><span class="boss-card-description">${entry.description}</span><span class="boss-card-state">${entry.unlocked ? `Fight as ${this.game.player.config.name}` : `Locked${entry.unlockRequirement ? ` · ${entry.unlockRequirement}` : ''}`}</span>`;
       if (entry.unlocked) {
         card.addEventListener('click', () => {
           this.game.startEncounter(index);
