@@ -54,7 +54,6 @@ export class Rogue {
   useAbility(id) {
     const method = {
       slash: 'useSlash',
-      knife: 'useKnife',
       vial: 'useVial',
       sprint: 'useSprint',
       execute: 'useExecute',
@@ -81,9 +80,6 @@ export class Rogue {
 
     if ((id === 'slash' || id === 'execute') && target && distance(this, target) > ability.meleeRange) {
       return { available: false, reason: 'Move into melee range' };
-    }
-    if (id === 'knife' && target && distance(this, target) > ability.range) {
-      return { available: false, reason: 'Target out of range' };
     }
     if (id === 'vial' && this.vial) return { available: false, reason: 'Pick up the active poison vial first' };
     if (id === 'execute') {
@@ -140,21 +136,6 @@ export class Rogue {
     this.game.damageBoss(a.damage, a.name);
     this.game.spawnBurst(target.x, target.y, this.weaponPoisonRemaining > 0 ? C.visual.poison : C.visual.core, 34);
     if (wasPoisoned) this.addComboPoint(C.comboPoints.gainPerPoisonedSlash);
-    this.applyWeaponPoison(target);
-  }
-
-  useKnife() {
-    const a = C.abilities.knife;
-    if (!this.canUse('knife')) return;
-    const target = this.getTarget();
-    if (!target) return;
-    if (distance(this, target) > a.range) {
-      this.game.flashMessage('Target out of Knife Throw range');
-      return;
-    }
-    this.cooldowns.knife = a.cooldown;
-    this.game.damageBoss(a.damage, a.name);
-    this.game.spawnProjectile(this, target, this.weaponPoisonRemaining > 0 ? C.visual.poison : C.visual.core, a.projectileDuration);
     this.applyWeaponPoison(target);
   }
 
