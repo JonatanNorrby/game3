@@ -9,8 +9,9 @@ export class ArcaneMage {
   }
 
   reset() {
-    this.x = this.game.worldWidth * C.spawn.x;
-    this.y = this.game.worldHeight * C.spawn.y;
+    const spawn = this.game.currentArena?.playerSpawn ?? C.spawn;
+    this.x = this.game.worldWidth * spawn.x;
+    this.y = this.game.worldHeight * spawn.y;
     this.health = C.maxHealth;
     this.cooldowns = {};
     this.effects = [];
