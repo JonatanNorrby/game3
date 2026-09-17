@@ -13,11 +13,22 @@ export class Game {
     this.width = Math.max(1, Math.round(viewport.width ?? window.innerWidth ?? 1280));
     this.height = Math.max(1, Math.round(viewport.height ?? window.innerHeight ?? 720));
     this.pixelRatio = Math.max(1, Math.min(viewport.pixelRatio ?? window.devicePixelRatio ?? 1, 2));
-    this.worldWidth = GAME_CONFIG.world.width;
-    this.worldHeight = GAME_CONFIG.world.height;
+
+    this.roster = BOSS_ROSTER;
+    this.bossIndex = 0;
+    this.currentArena = this.roster[this.bossIndex]?.config?.arena ?? GAME_CONFIG.world;
+    this.worldWidth = this.currentArena.width ?? GAME_CONFIG.world.width;
+    this.worldHeight = this.currentArena.height ?? GAME_CONFIG.world.height;
+
     this.configureSurface();
     this.input = new Input();
-    this.camera = new Camera({ viewportWidth: this.width, viewportHeight: this.height, worldWidth: this.worldWidth, worldHeight: this.worldHeight, followSharpness: GAME_CONFIG.camera.followSharpness });
+    this.camera = new Camera({
+      viewportWidth: this.width,
+      viewportHeight: this.height,
+      worldWidth: this.worldWidth,
+      worldHeight: this.worldHeight,
+      zoom: GAME_CONFIG.camera.zoom,
+    });
     this.time = 0;
     this.lastTime = performance.now();
     this.shake = 0;
@@ -26,8 +37,6 @@ export class Game {
     this.effects = [];
     this.floatingTexts = [];
     this.flashTimer = 0;
-    this.roster = BOSS_ROSTER;
-    this.bossIndex = 0;
     this.player = new ArcaneMage(this);
     this.boss = new this.roster[this.bossIndex].BossClass(this);
     this.camera.snapTo(this.player);
@@ -52,6 +61,7 @@ export class Game {
     this.pixelRatio = Math.max(1, Math.min(viewport.pixelRatio ?? this.pixelRatio, 2));
     this.configureSurface();
     this.camera.resize(this.width, this.height);
+    this.camera.snapTo(this.player);
   }
 
   cacheUI() {
@@ -110,10 +120,18 @@ export class Game {
     this.ui.banner.classList.add('hidden');
   }
 
+  applyArena(entry) {
+    this.currentArena = entry?.config?.arena ?? GAME_CONFIG.world;
+    this.worldWidth = this.currentArena.width ?? GAME_CONFIG.world.width;
+    this.worldHeight = this.currentArena.height ?? GAME_CONFIG.world.height;
+    this.camera.setWorld(this.worldWidth, this.worldHeight);
+  }
+
   startEncounter(index = this.bossIndex) {
     const entry = this.roster[index];
     if (!entry?.unlocked) return false;
     this.bossIndex = index;
+    this.applyArena(entry);
     this.player.reset();
     this.boss = new entry.BossClass(this);
     this.projectiles = [];
@@ -206,7 +224,7 @@ export class Game {
     ctx.strokeRect(10, 10, this.worldWidth - 20, this.worldHeight - 20);
     ctx.strokeStyle = 'rgba(155,105,230,.12)';
     ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.arc(this.worldWidth / 2, this.worldHeight / 2, 420, 0, Math.PI * 2); ctx.stroke();
+    ctx.beginPath(); ctx.arc(this.worldWidth / 2, this.worldHeight / 2, Math.min(this.worldWidth, this.worldHeight) * 0.34, 0, Math.PI * 2); ctx.stroke();
   }
 
   drawProjectiles(ctx) {
