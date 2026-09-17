@@ -54,13 +54,15 @@ export class Golem {
 
   createRainZones(count) {
     const zones = [];
-    const player = this.game.player;
+    const targets = this.game.getEncounterTargets();
+    const fallback = this.game.player;
     const spreadX = Math.min(900, this.game.width * 0.85);
     const spreadY = Math.min(620, this.game.height * 0.72);
     for (let i = 0; i < count; i += 1) {
+      const focus = targets[i % Math.max(1, targets.length)] ?? fallback;
       zones.push({
-        x: clamp(player.x + (Math.random() - 0.5) * spreadX, 90, this.game.worldWidth - 90),
-        y: clamp(player.y + (Math.random() - 0.5) * spreadY, 90, this.game.worldHeight - 90),
+        x: clamp(focus.x + (Math.random() - 0.5) * spreadX, 90, this.game.worldWidth - 90),
+        y: clamp(focus.y + (Math.random() - 0.5) * spreadY, 90, this.game.worldHeight - 90),
       });
     }
     return zones;
@@ -70,18 +72,25 @@ export class Golem {
     const cast = this.cast;
     this.cast = null;
     const m = C.mechanics[cast.id];
-    const p = this.game.player;
+    const targets = this.game.getEncounterTargets();
+
     if (cast.id === 'arcanePulse') {
-      p.takeDamage(m.damage, m.name);
+      for (const target of targets) target.takeDamage(m.damage, m.name);
       this.game.spawnArenaFlash('#9f63d8');
     } else if (cast.id === 'nova') {
-      if (distance(this, p) <= m.radius) p.takeDamage(m.damage, m.name);
+      for (const target of targets) {
+        if (distance(this, target) <= m.radius) target.takeDamage(m.damage, m.name);
+      }
       this.game.spawnBurst(this.x, this.y, C.visual.danger, m.radius);
     } else if (cast.id === 'frontal') {
-      if (pointInCone(p, this, cast.facing, m.range, m.halfAngle)) p.takeDamage(m.damage, m.name);
+      for (const target of targets) {
+        if (pointInCone(target, this, cast.facing, m.range, m.halfAngle)) target.takeDamage(m.damage, m.name);
+      }
     } else if (cast.id === 'rain') {
       for (const zone of cast.zones) {
-        if (distance(zone, p) <= m.radius) p.takeDamage(m.damage, m.name);
+        for (const target of targets) {
+          if (distance(zone, target) <= m.radius) target.takeDamage(m.damage, m.name);
+        }
         this.game.spawnBurst(zone.x, zone.y, C.visual.warning, m.radius);
       }
     }
