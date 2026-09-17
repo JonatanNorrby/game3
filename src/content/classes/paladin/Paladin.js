@@ -1,4 +1,5 @@
 import { clamp, distance } from '../../../core/geometry.js';
+import { drawMeleeRangeIndicator } from '../../../core/meleeRangeIndicator.js';
 import { PALADIN_CONFIG as C } from './config.js';
 
 export class Paladin {
@@ -16,7 +17,7 @@ export class Paladin {
     this.cooldowns = {};
     this.resources = Object.fromEntries(Object.entries(C.resources).map(([id, config]) => [id, config.start ?? config.max]));
     this.cast = null;
-    this.bossDot = null;
+    this.bossDots = [];
     this.shielded = false;
     this.alive = true;
   }
@@ -28,7 +29,7 @@ export class Paladin {
       this.cooldowns[key] = Math.max(0, this.cooldowns[key] - dt);
     }
 
-    this.updateBossDot(dt);
+    this.updateBossDots(dt);
 
     const dx = (input.isActionHeld('moveRight') ? 1 : 0) - (input.isActionHeld('moveLeft') ? 1 : 0);
     const dy = (input.isActionHeld('moveDown') ? 1 : 0) - (input.isActionHeld('moveUp') ? 1 : 0);
@@ -55,6 +56,10 @@ export class Paladin {
       meditation: 'useMeditation',
     }[id];
     if (method) this[method]();
+  }
+
+  getTarget() {
+    return this.game.getCombatTarget?.() ?? this.game.boss ?? null;
   }
 
   getResource(id) {
@@ -96,7 +101,8 @@ export class Paladin {
     if ((this.cooldowns[id] ?? 0) > 0) return { available: false, reason: 'On cooldown' };
 
     if (id === 'strike') {
-      const inRange = distance(this, this.game.boss) <= ability.meleeRange;
+      const target = this.getTarget();
+      const inRange = Boolean(target) && distance(this, target) <= ability.meleeRange;
       return inRange
         ? { available: true }
         : { available: false, reason: 'Move into melee range' };
@@ -121,9 +127,11 @@ export class Paladin {
   useStrike() {
     if (!this.tryUse('strike')) return;
     const a = C.abilities.strike;
+    const target = this.getTarget();
+    if (!target) return;
     this.cooldowns.strike = a.cooldown;
     this.game.damageBoss(a.damage, a.name);
-    this.game.spawnBurst(this.game.boss.x, this.game.boss.y, C.visual.holy, 44);
+    this.game.spawnBurst(target.x, target.y, C.visual.holy, 44);
     const before = this.getResource('mana');
     const after = this.addResource('mana', a.manaRestore);
     if (after > before) this.game.spawnFloatingText(this.x, this.y - 46, `+${after - before} Mana`, '#8ea8ff');
@@ -132,9 +140,10 @@ export class Paladin {
   useBrand() {
     if (!this.tryUse('brand')) return;
     const a = C.abilities.brand;
+    const target = this.getTarget();
     this.startCast('brand', a.name, a.castTime, () => {
       if (!this.spendMana(a.manaCost)) return;
-      this.applyBossDot();
+      this.applyBossDot(target);
     });
   }
 
@@ -163,32 +172,38 @@ export class Paladin {
     });
   }
 
-  applyBossDot() {
+  applyBossDot(target = this.getTarget()) {
+    if (!target || target.alive === false || typeof target.takeDamage !== 'function') return;
     const a = C.abilities.brand;
     const dot = a.dot;
-    this.bossDot = {
+    this.bossDots.push({
+      target,
       remaining: dot.duration,
       tickTimer: dot.tickEvery,
       tickEvery: dot.tickEvery,
       damagePerTick: dot.damagePerTick,
-    };
-    this.game.flashMessage(`${a.name} applied`);
+    });
+    const stacks = this.bossDots.filter((activeDot) => activeDot.target === target).length;
+    this.game.flashMessage(`${a.name} ×${stacks}`);
   }
 
-  updateBossDot(dt) {
-    if (!this.bossDot || !this.game.boss?.alive) {
-      if (!this.game.boss?.alive) this.bossDot = null;
-      return;
+  updateBossDots(dt) {
+    for (const dot of this.bossDots) {
+      const target = dot.target;
+      if (!target || target.alive === false || target.targetable === false || typeof target.takeDamage !== 'function') {
+        dot.remaining = 0;
+        continue;
+      }
+
+      dot.remaining -= dt;
+      dot.tickTimer -= dt;
+      while (dot.tickTimer <= 0 && dot.remaining > -0.001 && target.alive !== false) {
+        dot.tickTimer += dot.tickEvery;
+        target.takeDamage(dot.damagePerTick, C.abilities.brand.name);
+      }
     }
 
-    this.bossDot.remaining -= dt;
-    this.bossDot.tickTimer -= dt;
-    while (this.bossDot.tickTimer <= 0 && this.bossDot.remaining > -0.001) {
-      this.bossDot.tickTimer += this.bossDot.tickEvery;
-      this.game.damageBoss(this.bossDot.damagePerTick, C.abilities.brand.name);
-    }
-
-    if (this.bossDot.remaining <= 0) this.bossDot = null;
+    this.bossDots = this.bossDots.filter((dot) => dot.remaining > 0 && dot.target?.alive !== false && dot.target?.targetable !== false);
   }
 
   resolveBossCollision() {
@@ -267,17 +282,32 @@ export class Paladin {
   }
 
   draw(ctx) {
-    if (this.bossDot && this.game.boss?.alive) {
+    drawMeleeRangeIndicator(ctx, this.game, this, C.abilities.strike.meleeRange);
+
+    const stackCounts = new Map();
+    for (const dot of this.bossDots) {
+      if (dot.remaining <= 0 || dot.target?.alive === false || dot.target?.targetable === false) continue;
+      stackCounts.set(dot.target, (stackCounts.get(dot.target) ?? 0) + 1);
+    }
+
+    for (const [target, stacks] of stackCounts) {
       const pulse = 1 + Math.sin(this.game.time * 5) * 0.08;
       ctx.save();
-      ctx.translate(this.game.boss.x, this.game.boss.y);
+      ctx.translate(target.x, target.y);
       ctx.scale(pulse, pulse);
       ctx.strokeStyle = C.visual.holy;
-      ctx.lineWidth = 4;
+      ctx.lineWidth = 3 + Math.min(5, stacks);
       ctx.globalAlpha = 0.72;
       ctx.beginPath();
-      ctx.arc(0, 0, (this.game.boss.config?.radius ?? 40) + 16, 0, Math.PI * 2);
+      ctx.arc(0, 0, (target.config?.radius ?? target.radius ?? 40) + 16, 0, Math.PI * 2);
       ctx.stroke();
+      if (stacks > 1) {
+        ctx.globalAlpha = 0.9;
+        ctx.fillStyle = C.visual.holy;
+        ctx.font = '800 13px system-ui';
+        ctx.textAlign = 'center';
+        ctx.fillText(`BRAND ×${stacks}`, 0, -(target.config?.radius ?? target.radius ?? 40) - 28);
+      }
       ctx.restore();
     }
 
