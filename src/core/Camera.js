@@ -1,12 +1,10 @@
-import { clamp } from './geometry.js';
-
 export class Camera {
-  constructor({ viewportWidth, viewportHeight, worldWidth, worldHeight, followSharpness = 8 }) {
+  constructor({ viewportWidth, viewportHeight, worldWidth, worldHeight, zoom = 1 }) {
     this.viewportWidth = viewportWidth;
     this.viewportHeight = viewportHeight;
     this.worldWidth = worldWidth;
     this.worldHeight = worldHeight;
-    this.followSharpness = followSharpness;
+    this.zoom = zoom;
     this.x = 0;
     this.y = 0;
   }
@@ -14,51 +12,44 @@ export class Camera {
   resize(viewportWidth, viewportHeight) {
     this.viewportWidth = viewportWidth;
     this.viewportHeight = viewportHeight;
-    this.clampToWorld();
   }
 
-  axisBounds(worldSize, viewportSize) {
-    if (worldSize <= viewportSize) {
-      const centered = -(viewportSize - worldSize) / 2;
-      return { min: centered, max: centered };
-    }
-    return { min: 0, max: worldSize - viewportSize };
+  setWorld(worldWidth, worldHeight) {
+    this.worldWidth = worldWidth;
+    this.worldHeight = worldHeight;
+  }
+
+  setZoom(zoom) {
+    this.zoom = Math.max(0.1, zoom || 1);
   }
 
   desiredPosition(target) {
-    const xBounds = this.axisBounds(this.worldWidth, this.viewportWidth);
-    const yBounds = this.axisBounds(this.worldHeight, this.viewportHeight);
+    const visibleWorldWidth = this.viewportWidth / this.zoom;
+    const visibleWorldHeight = this.viewportHeight / this.zoom;
     return {
-      x: clamp(target.x - this.viewportWidth / 2, xBounds.min, xBounds.max),
-      y: clamp(target.y - this.viewportHeight / 2, yBounds.min, yBounds.max),
+      x: target.x - visibleWorldWidth / 2,
+      y: target.y - visibleWorldHeight / 2,
     };
   }
 
   snapTo(target) {
+    if (!target) return;
     const desired = this.desiredPosition(target);
     this.x = desired.x;
     this.y = desired.y;
   }
 
-  update(dt, target) {
-    if (!target) return;
-    const desired = this.desiredPosition(target);
-    const blend = 1 - Math.exp(-this.followSharpness * dt);
-    this.x += (desired.x - this.x) * blend;
-    this.y += (desired.y - this.y) * blend;
-    this.clampToWorld();
-  }
-
-  clampToWorld() {
-    const xBounds = this.axisBounds(this.worldWidth, this.viewportWidth);
-    const yBounds = this.axisBounds(this.worldHeight, this.viewportHeight);
-    this.x = clamp(this.x, xBounds.min, xBounds.max);
-    this.y = clamp(this.y, yBounds.min, yBounds.max);
+  update(_dt, target) {
+    // Deliberately do not clamp to arena edges. The player stays centered even
+    // when that means showing space beyond the edge of the encounter room.
+    this.snapTo(target);
   }
 
   begin(ctx, shakeX = 0, shakeY = 0) {
     ctx.save();
-    ctx.translate(Math.round(-this.x + shakeX), Math.round(-this.y + shakeY));
+    ctx.translate(shakeX, shakeY);
+    ctx.scale(this.zoom, this.zoom);
+    ctx.translate(-this.x, -this.y);
   }
 
   end(ctx) {
