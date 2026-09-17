@@ -20,7 +20,8 @@
       </div>
       <div class="topbar-right">
         <span id="encounter-label">Boss 1 / 1</span>
-        <span id="version-label">v0.1.1</span>
+        <span id="version-label" data-game-version>v0.2.0</span>
+        <button id="hud-menu-button" class="hud-menu-button" type="button">Menu</button>
       </div>
     </header>
 
@@ -47,7 +48,45 @@
       </div>
 
       <div id="abilities" class="abilities" aria-label="Abilities"></div>
-      <div class="help">Move: <b>WASD</b> · Abilities: <b>1–5</b> · Casting while moving cancels cast-time spells</div>
+      <div id="controls-help" class="help"></div>
+    </section>
+
+    <section id="menu-overlay" class="menu-overlay">
+      <div id="menu-main" class="menu-card menu-view">
+        <div class="menu-kicker">Single-player raid boss rush</div>
+        <h1>RAIDFORGE</h1>
+        <p class="menu-copy">Read the encounter, execute mechanics, keep yourself alive, and burn the boss down.</p>
+        <div class="menu-actions">
+          <button id="menu-play" class="menu-primary" type="button">Choose Boss</button>
+          <button id="menu-settings-button" type="button">Settings</button>
+        </div>
+        <div class="menu-version" data-game-version>v0.2.0</div>
+      </div>
+
+      <div id="menu-bosses" class="menu-card menu-view menu-wide hidden">
+        <div class="menu-heading-row">
+          <div>
+            <div class="menu-kicker">Boss Rush</div>
+            <h2>Choose Encounter</h2>
+          </div>
+          <button id="boss-back" class="menu-back" type="button">Back</button>
+        </div>
+        <p class="menu-copy">Future encounters can remain locked here until their progression requirement is met.</p>
+        <div id="boss-list" class="boss-list"></div>
+      </div>
+
+      <div id="menu-settings" class="menu-card menu-view menu-wide hidden">
+        <div class="menu-heading-row">
+          <div>
+            <div class="menu-kicker">Settings</div>
+            <h2>Keybinds</h2>
+          </div>
+          <button id="settings-back" class="menu-back" type="button">Back</button>
+        </div>
+        <p class="menu-copy">Click any binding, then press the key you want. Conflicting bindings are automatically swapped.</p>
+        <div id="keybind-list" class="keybind-list"></div>
+        <button id="reset-keybinds" class="reset-button" type="button">Reset Defaults</button>
+      </div>
     </section>
   </main>
 
