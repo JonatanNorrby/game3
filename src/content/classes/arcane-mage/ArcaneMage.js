@@ -36,11 +36,17 @@ export class ArcaneMage {
       if (this.cast) this.cancelCast();
     }
     this.updateCast(dt);
-    if (input.consumeAction('ability1')) this.useRenew();
-    if (input.consumeAction('ability2')) this.useDirectHeal();
-    if (input.consumeAction('ability3')) this.useBarrage();
-    if (input.consumeAction('ability4')) this.useFiller();
-    if (input.consumeAction('ability5')) this.useTeleport();
+  }
+
+  useAbility(id) {
+    const method = {
+      renew: 'useRenew',
+      directHeal: 'useDirectHeal',
+      barrage: 'useBarrage',
+      filler: 'useFiller',
+      teleport: 'useTeleport',
+    }[id];
+    if (method) this[method]();
   }
 
   canUse(id) { return this.alive && !this.cast && (this.cooldowns[id] ?? 0) <= 0 && this.game.boss?.alive; }
