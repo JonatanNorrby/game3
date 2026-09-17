@@ -41,6 +41,7 @@ export class Game {
     this.effects = [];
     this.floatingTexts = [];
     this.flashTimer = 0;
+    this.pendingAbilityBarRebuild = false;
     this.player = new this.classRoster[this.classIndex].PlayerClass(this);
     this.boss = new this.roster[this.bossIndex].BossClass(this);
     this.camera.snapTo(this.player);
@@ -107,16 +108,30 @@ export class Game {
   }
 
   buildAbilityBar() {
+    const barConfig = this.player.getAbilityBarConfig?.() ?? {
+      id: this.player.config.id,
+      abilities: this.player.config.abilities,
+    };
+    this.pendingAbilityBarRebuild = false;
     this.abilityBar = new AbilityBar({
       container: this.ui.abilities,
-      classId: this.player.config.id,
-      abilities: this.player.config.abilities,
+      classId: barConfig.id,
+      abilities: barConfig.abilities,
       input: this.input,
       onUse: (abilityId) => {
         if (this.state === 'playing') this.player.useAbility(abilityId);
       },
     });
     this.refreshAbilityBindings();
+  }
+
+  requestAbilityBarRebuild() {
+    this.pendingAbilityBarRebuild = true;
+  }
+
+  flushAbilityBarRebuild() {
+    if (!this.pendingAbilityBarRebuild) return;
+    this.buildAbilityBar();
   }
 
   refreshAbilityBindings() {
@@ -169,6 +184,7 @@ export class Game {
     this.bossIndex = index;
     this.applyArena(entry);
     this.player.reset();
+    this.buildAbilityBar();
     this.boss = new entry.BossClass(this);
     this.projectiles = [];
     this.effects = [];
@@ -191,6 +207,7 @@ export class Game {
       this.player.update(dt, this.input);
       const specialInputHandled = this.player.handleSpecialInput?.(this.input) === true;
       if (!specialInputHandled) this.handleAbilityInput();
+      this.flushAbilityBarRebuild();
       this.boss.update(dt);
       this.updateParticles(dt);
       this.camera.update(dt, this.player);
