@@ -35,12 +35,12 @@ export const PALADIN_CONFIG = {
     },
     brand: {
       name: 'Sacred Brand',
-      description: 'Long cast that brands the boss with holy damage over time.',
+      description: 'Long cast that adds an independent holy damage-over-time stack to the target. Multiple Brands can overlap.',
       icon: './assets/classes/paladin/abilities/sacred-brand.svg',
       cooldown: 0,
       castTime: 2.4,
       manaCost: 45,
-      castDisplay: '2.4 sec cast · 45 mana',
+      castDisplay: '2.4 sec cast · 45 mana · stacks',
       dot: {
         duration: 12,
         tickEvery: 1.5,
