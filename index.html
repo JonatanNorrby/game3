@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Raidforge Prototype</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <main id="app">
+    <header class="topbar">
+      <div>
+        <strong>RAIDFORGE</strong>
+        <span class="muted">solo raid prototype</span>
+      </div>
+      <div class="topbar-right">
+        <span id="encounter-label">Boss 1 / 1</span>
+        <span id="version-label">v0.1.0</span>
+      </div>
+    </header>
+
+    <section class="boss-frame">
+      <div class="boss-name-row">
+        <span id="boss-name">Arcane Warden</span>
+        <span id="boss-hp-text">100%</span>
+      </div>
+      <div class="bar"><div id="boss-hp" class="bar-fill boss-fill"></div></div>
+      <div id="boss-cast-wrap" class="cast-wrap hidden">
+        <div class="cast-label"><span id="boss-cast-name"></span><span id="boss-cast-time"></span></div>
+        <div class="bar small"><div id="boss-cast" class="bar-fill cast-fill"></div></div>
+      </div>
+    </section>
+
+    <section class="stage-wrap">
+      <canvas id="game" width="1280" height="720" aria-label="Raid arena"></canvas>
+      <div id="banner" class="banner hidden"></div>
+    </section>
+
+    <section class="player-ui">
+      <div class="player-status">
+        <div class="status-line"><strong>Arcane Mage</strong><span id="player-hp-text">100 / 100</span></div>
+        <div class="bar"><div id="player-hp" class="bar-fill player-fill"></div></div>
+        <div id="player-cast-wrap" class="cast-wrap hidden">
+          <div class="cast-label"><span id="player-cast-name"></span><span id="player-cast-time"></span></div>
+          <div class="bar small"><div id="player-cast" class="bar-fill player-cast-fill"></div></div>
+        </div>
+      </div>
+
+      <div id="abilities" class="abilities" aria-label="Abilities"></div>
+      <div class="help">Move: <b>WASD</b> · Abilities: <b>1–5</b> · Casting while moving cancels cast-time spells</div>
+    </section>
+  </main>
+
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>
