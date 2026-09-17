@@ -40,7 +40,7 @@ export const CLASS_ROSTER = [
     id: ROGUE_CONFIG.id,
     name: ROGUE_CONFIG.name,
     role: ROGUE_CONFIG.role,
-    description: 'Run in and out of melee, retrieve poison vials, sustain through poison lifesteal, and turn poison uptime into more frequent Sprints.',
+    description: 'Run in and out of melee, maintain poison for Combo Points and Sprint resets, then choose between keeping poison active or consuming it for a burst heal.',
     PlayerClass: Rogue,
     config: ROGUE_CONFIG,
   },
