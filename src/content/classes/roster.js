@@ -6,6 +6,8 @@ import { Hunter } from './hunter/Hunter.js';
 import { HUNTER_CONFIG } from './hunter/config.js';
 import { Rogue } from './rogue/Rogue.js';
 import { ROGUE_CONFIG } from './rogue/config.js';
+import { Druid } from './druid/Druid.js';
+import { DRUID_CONFIG } from './druid/config.js';
 
 export const CLASS_ROSTER = [
   {
@@ -39,5 +41,13 @@ export const CLASS_ROSTER = [
     description: 'Run in and out of melee, retrieve poison vials, sustain through poison lifesteal, and turn poison uptime into more frequent Sprints.',
     PlayerClass: Rogue,
     config: ROGUE_CONFIG,
+  },
+  {
+    id: DRUID_CONFIG.id,
+    name: DRUID_CONFIG.name,
+    role: DRUID_CONFIG.role,
+    description: 'Shapeshift between Bear, Monkey, Puma, and Panda forms to trade between heavy attacks, mobility, fast damage, and healing.',
+    PlayerClass: Druid,
+    config: DRUID_CONFIG,
   },
 ];
