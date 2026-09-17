@@ -1,6 +1,6 @@
 export const GAME_CONFIG = {
   title: 'RAIDFORGE',
-  version: '0.4.1',
+  version: '0.5.0',
   world: {
     // Fallback arena size. Individual bosses should define their own arena.
     width: 1800,
