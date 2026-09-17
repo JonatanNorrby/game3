@@ -106,7 +106,7 @@ export class MenuController {
 
   renderKeybinds() {
     this.keybindList.innerHTML = '';
-    const slotCount = this.game.abilityBar?.slotCount ?? 0;
+    const slotCount = this.game.player?.config?.maxAbilitySlots ?? this.game.abilityBar?.slotCount ?? 0;
     const visibleDefinitions = KEYBIND_DEFINITIONS.filter((definition) => {
       if (!definition.id.startsWith('ability')) return true;
       const slot = Number(definition.id.replace('ability', ''));
