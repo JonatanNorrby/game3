@@ -8,18 +8,23 @@
 </head>
 <body>
   <main id="app">
-    <header class="topbar">
+    <section class="stage-wrap">
+      <canvas id="game" aria-label="Raid arena"></canvas>
+      <div id="banner" class="banner hidden"></div>
+    </section>
+
+    <header class="topbar hud-panel">
       <div>
         <strong>RAIDFORGE</strong>
         <span class="muted">solo raid prototype</span>
       </div>
       <div class="topbar-right">
         <span id="encounter-label">Boss 1 / 1</span>
-        <span id="version-label">v0.1.0</span>
+        <span id="version-label">v0.1.1</span>
       </div>
     </header>
 
-    <section class="boss-frame">
+    <section class="boss-frame hud-panel">
       <div class="boss-name-row">
         <span id="boss-name">Arcane Warden</span>
         <span id="boss-hp-text">100%</span>
@@ -31,12 +36,7 @@
       </div>
     </section>
 
-    <section class="stage-wrap">
-      <canvas id="game" width="1280" height="720" aria-label="Raid arena"></canvas>
-      <div id="banner" class="banner hidden"></div>
-    </section>
-
-    <section class="player-ui">
+    <section class="player-ui hud-panel">
       <div class="player-status">
         <div class="status-line"><strong>Arcane Mage</strong><span id="player-hp-text">100 / 100</span></div>
         <div class="bar"><div id="player-hp" class="bar-fill player-fill"></div></div>
