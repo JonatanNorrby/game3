@@ -18,7 +18,7 @@
       <div><strong>RAIDFORGE</strong><span class="muted">solo raid prototype</span></div>
       <div class="topbar-right">
         <span id="encounter-label">Boss 1 / 1</span>
-        <span id="version-label" data-game-version>v0.5.0</span>
+        <span id="version-label" data-game-version>v0.6.0</span>
         <button id="hud-menu-button" class="hud-menu-button" type="button">Menu</button>
       </div>
     </header>
@@ -38,6 +38,10 @@
       <div id="player-resource-wrap" class="player-resource-wrap hidden">
         <div class="resource-label"><span id="player-resource-name">Mana</span><span id="player-resource-text">100 / 100</span></div>
         <div class="bar small"><div id="player-resource" class="bar-fill player-resource-fill"></div></div>
+      </div>
+      <div id="companion-wrap" class="companion-wrap hidden">
+        <div class="resource-label"><strong id="companion-name">Companion</strong><span id="companion-hp-text">100 / 100</span></div>
+        <div class="bar small"><div id="companion-hp" class="bar-fill companion-fill"></div></div>
       </div>
       <div id="player-cast-wrap" class="cast-wrap hidden">
         <div class="cast-label"><span id="player-cast-name"></span><span id="player-cast-time"></span></div>
@@ -59,7 +63,7 @@
           <button id="menu-play" class="menu-primary" type="button">Choose Class & Boss</button>
           <button id="menu-settings-button" type="button">Settings</button>
         </div>
-        <div class="menu-version" data-game-version>v0.5.0</div>
+        <div class="menu-version" data-game-version>v0.6.0</div>
       </div>
 
       <div id="menu-classes" class="menu-card menu-view menu-wide hidden">
