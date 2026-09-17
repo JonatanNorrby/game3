@@ -13,7 +13,6 @@ export const ARCANE_MAGE_CONFIG = {
   },
   abilities: {
     renew: {
-      key: '1',
       name: 'Temporal Mend',
       description: 'Heal over time: 48 health over 6 sec.',
       cooldown: 8,
@@ -22,7 +21,6 @@ export const ARCANE_MAGE_CONFIG = {
       healPerTick: 8,
     },
     directHeal: {
-      key: '2',
       name: 'Arcane Restoration',
       description: '1.1 sec cast. Restore 34 health.',
       cooldown: 3.5,
@@ -30,14 +28,12 @@ export const ARCANE_MAGE_CONFIG = {
       heal: 34,
     },
     barrage: {
-      key: '3',
       name: 'Arcane Barrage',
       description: 'Instant heavy hit. 6 sec cooldown.',
       cooldown: 6,
       damage: 92,
     },
     filler: {
-      key: '4',
       name: 'Arcane Bolt',
       description: '0.9 sec cast. Your repeatable filler.',
       cooldown: 0,
@@ -45,7 +41,6 @@ export const ARCANE_MAGE_CONFIG = {
       damage: 34,
     },
     teleport: {
-      key: '5',
       name: 'Recall Anchor',
       description: 'Place an anchor; press again to teleport back.',
       cooldownAfterRecall: 12,
