@@ -105,6 +105,7 @@ export class MenuController {
       card.className = `boss-card class-card${selected ? ' selected' : ''}`;
       card.innerHTML = `<span class="boss-card-title">${entry.name}</span><span class="class-card-role">${entry.role}</span><span class="boss-card-description">${entry.description}</span><span class="boss-card-state">${selected ? 'Selected · Continue' : 'Choose class'}</span>`;
       card.addEventListener('click', () => {
+        this.canResumeEncounter = false;
         this.game.selectClass(index);
         this.renderKeybinds();
         this.show('bosses');
