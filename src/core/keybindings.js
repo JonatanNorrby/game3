@@ -4,6 +4,7 @@ export const KEYBIND_DEFINITIONS = [
   { id: 'moveDown', label: 'Move Down', defaultKey: 's' },
   { id: 'moveRight', label: 'Move Right', defaultKey: 'd' },
   { id: 'targetNext', label: 'Cycle Target', defaultKey: 'tab' },
+  { id: 'interact', label: 'Interact', defaultKey: 'e' },
   { id: 'ability1', label: 'Ability 1', defaultKey: '1' },
   { id: 'ability2', label: 'Ability 2', defaultKey: '2' },
   { id: 'ability3', label: 'Ability 3', defaultKey: '3' },
