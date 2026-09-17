@@ -19,7 +19,7 @@ export class Druid {
     this.effects = [];
     this.cast = null;
     this.form = null;
-    this.lastMove = { x: 0, y: -1 };
+    this.currentMove = null;
     this.alive = true;
   }
 
@@ -44,11 +44,12 @@ export class Druid {
 
     const dx = (input.isActionHeld('moveRight') ? 1 : 0) - (input.isActionHeld('moveLeft') ? 1 : 0);
     const dy = (input.isActionHeld('moveDown') ? 1 : 0) - (input.isActionHeld('moveUp') ? 1 : 0);
+    this.currentMove = null;
     if (dx !== 0 || dy !== 0) {
       const length = Math.hypot(dx, dy);
-      this.lastMove = { x: dx / length, y: dy / length };
-      this.x += this.lastMove.x * C.moveSpeed * dt;
-      this.y += this.lastMove.y * C.moveSpeed * dt;
+      this.currentMove = { x: dx / length, y: dy / length };
+      this.x += this.currentMove.x * C.moveSpeed * dt;
+      this.y += this.currentMove.y * C.moveSpeed * dt;
       this.clampPosition();
       this.resolveBossCollision();
       if (this.cast) this.cancelCast();
@@ -132,11 +133,7 @@ export class Druid {
     const a = C.abilities[id];
     if (!this.canUse(id)) return;
     this.cooldowns[id] = a.cooldown;
-
-    let direction = this.lastMove;
-    if (!direction || Math.hypot(direction.x, direction.y) < 0.1) {
-      direction = this.directionToBoss();
-    }
+    const direction = this.currentMove ?? this.directionToBoss();
     this.leap(direction.x, direction.y, a.distance, '#e5b15f');
   }
 
