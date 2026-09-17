@@ -269,6 +269,7 @@ export class Game {
     this.updateCastUI(this.ui.bossCastWrap, this.ui.bossCastName, this.ui.bossCastTime, this.ui.bossCast, this.boss.cast);
     this.updateCastUI(this.ui.playerCastWrap, this.ui.playerCastName, this.ui.playerCastTime, this.ui.playerCast, this.player.cast);
     this.abilityBar.updateCooldowns(this.player.cooldowns);
+    this.abilityBar.updatePlayerState(this.player);
   }
 
   updateCastUI(wrap, name, time, fill, cast) {
