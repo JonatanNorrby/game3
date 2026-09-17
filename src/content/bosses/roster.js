@@ -2,6 +2,8 @@ import { Golem } from './golem/Golem.js';
 import { GOLEM_CONFIG } from './golem/config.js';
 import { Bellkeeper } from './bellkeeper/Bellkeeper.js';
 import { BELLKEEPER_CONFIG } from './bellkeeper/config.js';
+import { Astronomer } from './astronomer/Astronomer.js';
+import { ASTRONOMER_CONFIG } from './astronomer/config.js';
 
 // Boss progression lives here. Each entry exposes its config so the game can
 // configure arena dimensions before spawning the player or boss.
@@ -23,5 +25,14 @@ export const BOSS_ROSTER = [
     unlockRequirement: null,
     config: BELLKEEPER_CONFIG,
     BossClass: Bellkeeper,
+  },
+  {
+    id: ASTRONOMER_CONFIG.id,
+    name: ASTRONOMER_CONFIG.name,
+    description: 'Trace illuminated constellation stars in order to interrupt catastrophic casts while the star map begins rotating beneath the fight.',
+    unlocked: true,
+    unlockRequirement: null,
+    config: ASTRONOMER_CONFIG,
+    BossClass: Astronomer,
   },
 ];
