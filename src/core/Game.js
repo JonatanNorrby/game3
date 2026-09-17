@@ -94,6 +94,7 @@ export class Game {
       playerName: id('player-name'), playerHp: id('player-hp'), playerHpText: id('player-hp-text'),
       playerResourceWrap: id('player-resource-wrap'), playerResourceName: id('player-resource-name'),
       playerResourceText: id('player-resource-text'), playerResource: id('player-resource'),
+      companionWrap: id('companion-wrap'), companionName: id('companion-name'), companionHpText: id('companion-hp-text'), companionHp: id('companion-hp'),
       playerCastWrap: id('player-cast-wrap'), playerCastName: id('player-cast-name'), playerCastTime: id('player-cast-time'), playerCast: id('player-cast'),
       abilities: id('abilities'), banner: id('banner'), encounterLabel: id('encounter-label'), help: id('controls-help'),
     };
@@ -130,6 +131,11 @@ export class Game {
       const abilityId = this.abilityBar.getAbilityIdAtSlot(slot);
       if (abilityId) this.player.useAbility(abilityId);
     }
+  }
+
+  getEncounterTargets() {
+    const targets = this.player.getEncounterTargets?.() ?? [this.player];
+    return targets.filter((target) => target?.alive !== false && typeof target?.takeDamage === 'function');
   }
 
   selectClass(index) {
@@ -183,7 +189,8 @@ export class Game {
     this.time += dt;
     if (this.state === 'playing') {
       this.player.update(dt, this.input);
-      this.handleAbilityInput();
+      const specialInputHandled = this.player.handleSpecialInput?.(this.input) === true;
+      if (!specialInputHandled) this.handleAbilityInput();
       this.boss.update(dt);
       this.updateParticles(dt);
       this.camera.update(dt, this.player);
@@ -309,6 +316,21 @@ export class Game {
     this.ui.playerResource.style.background = resource.color ?? '#5477df';
   }
 
+  updateCompanionUI() {
+    const companion = this.player.getCompanionState?.() ?? null;
+    if (!companion) {
+      this.ui.companionWrap.classList.add('hidden');
+      return;
+    }
+
+    const pct = companion.maxHealth > 0 ? Math.max(0, Math.min(100, companion.health / companion.maxHealth * 100)) : 0;
+    this.ui.companionWrap.classList.remove('hidden');
+    this.ui.companionName.textContent = companion.name;
+    this.ui.companionHpText.textContent = companion.alive ? `${Math.ceil(companion.health)} / ${companion.maxHealth}` : 'DEAD';
+    this.ui.companionHp.style.width = `${pct}%`;
+    this.ui.companionHp.style.background = companion.color ?? '#d88935';
+  }
+
   updateUI() {
     const bossPct = Math.max(0, this.boss.health / this.boss.config.maxHealth * 100);
     const playerPct = Math.max(0, this.player.health / this.player.config.maxHealth * 100);
@@ -320,6 +342,7 @@ export class Game {
     this.ui.playerHpText.textContent = `${Math.ceil(this.player.health)} / ${this.player.config.maxHealth}`;
     this.ui.encounterLabel.textContent = `Boss ${this.bossIndex + 1} / ${this.roster.length}`;
     this.updatePrimaryResourceUI();
+    this.updateCompanionUI();
     this.updateCastUI(this.ui.bossCastWrap, this.ui.bossCastName, this.ui.bossCastTime, this.ui.bossCast, this.boss.cast);
     this.updateCastUI(this.ui.playerCastWrap, this.ui.playerCastName, this.ui.playerCastTime, this.ui.playerCast, this.player.cast);
     this.abilityBar.updateCooldowns(this.player.cooldowns);
