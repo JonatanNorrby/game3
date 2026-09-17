@@ -17,12 +17,20 @@ export class Camera {
     this.clampToWorld();
   }
 
+  axisBounds(worldSize, viewportSize) {
+    if (worldSize <= viewportSize) {
+      const centered = -(viewportSize - worldSize) / 2;
+      return { min: centered, max: centered };
+    }
+    return { min: 0, max: worldSize - viewportSize };
+  }
+
   desiredPosition(target) {
-    const maxX = Math.max(0, this.worldWidth - this.viewportWidth);
-    const maxY = Math.max(0, this.worldHeight - this.viewportHeight);
+    const xBounds = this.axisBounds(this.worldWidth, this.viewportWidth);
+    const yBounds = this.axisBounds(this.worldHeight, this.viewportHeight);
     return {
-      x: clamp(target.x - this.viewportWidth / 2, 0, maxX),
-      y: clamp(target.y - this.viewportHeight / 2, 0, maxY),
+      x: clamp(target.x - this.viewportWidth / 2, xBounds.min, xBounds.max),
+      y: clamp(target.y - this.viewportHeight / 2, yBounds.min, yBounds.max),
     };
   }
 
@@ -42,8 +50,10 @@ export class Camera {
   }
 
   clampToWorld() {
-    this.x = clamp(this.x, 0, Math.max(0, this.worldWidth - this.viewportWidth));
-    this.y = clamp(this.y, 0, Math.max(0, this.worldHeight - this.viewportHeight));
+    const xBounds = this.axisBounds(this.worldWidth, this.viewportWidth);
+    const yBounds = this.axisBounds(this.worldHeight, this.viewportHeight);
+    this.x = clamp(this.x, xBounds.min, xBounds.max);
+    this.y = clamp(this.y, yBounds.min, yBounds.max);
   }
 
   begin(ctx, shakeX = 0, shakeY = 0) {
