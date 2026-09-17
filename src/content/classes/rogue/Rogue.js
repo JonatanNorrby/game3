@@ -165,8 +165,10 @@ export class Rogue {
       this.game.flashMessage('Pick up your active poison vial');
       return;
     }
-    this.cooldowns.vial = a.cooldown;
-    this.startCast('vial', a.name, a.castTime, () => this.spawnVial());
+    this.startCast('vial', a.name, a.castTime, () => {
+      this.cooldowns.vial = a.cooldown;
+      this.spawnVial();
+    });
   }
 
   useSprint() {
