@@ -1,4 +1,5 @@
 import { clamp, distance } from '../../../core/geometry.js';
+import { drawMeleeRangeIndicator } from '../../../core/meleeRangeIndicator.js';
 import { MONK_CONFIG as C } from './config.js';
 
 const COLOR_ABILITY_IDS = ['blueStrike', 'greenStrike', 'redStrike'];
@@ -52,12 +53,17 @@ export class Monk {
     if (COLOR_ABILITY_IDS.includes(id)) this.useColorStrike(id);
   }
 
+  getTarget() {
+    return this.game.getCombatTarget?.() ?? this.game.boss ?? null;
+  }
+
   canUse(id) {
     return this.alive && !this.cast && (this.cooldowns[id] ?? 0) <= 0 && this.game.boss?.alive;
   }
 
   isInMeleeRange(range) {
-    return Boolean(this.game.boss?.alive) && distance(this, this.game.boss) <= range;
+    const target = this.getTarget();
+    return Boolean(target?.alive !== false) && distance(this, target) <= range;
   }
 
   getAbilityAvailability(id) {
@@ -72,11 +78,13 @@ export class Monk {
 
   useColorStrike(id) {
     const ability = C.abilities[id];
-    if (!ability || !this.canUse(id) || !this.isInMeleeRange(ability.meleeRange)) return;
+    const target = this.getTarget();
+    if (!ability || !target || !this.canUse(id)) return;
+    if (ability.meleeRange && !this.isInMeleeRange(ability.meleeRange)) return;
 
     this.cooldowns[id] = ability.cooldown;
     this.game.damageBoss(ability.damage, ability.name);
-    this.game.spawnBurst(this.game.boss.x, this.game.boss.y, C.visual[ability.color], 28);
+    this.game.spawnBurst(target.x, target.y, C.visual[ability.color], 28);
     this.advanceCombo(ability.color);
   }
 
@@ -149,7 +157,8 @@ export class Monk {
         if (effect.type === 'hot') this.heal(combo.healPerTick);
         if (effect.type === 'dot' && this.game.boss?.alive) {
           this.game.damageBoss(combo.damagePerTick, combo.name);
-          this.game.spawnBurst(this.game.boss.x, this.game.boss.y, C.visual.red, 18);
+          const target = this.getTarget();
+          if (target) this.game.spawnBurst(target.x, target.y, C.visual.red, 18);
         }
       }
     }
@@ -241,6 +250,8 @@ export class Monk {
   }
 
   draw(ctx) {
+    drawMeleeRangeIndicator(ctx, this.game, this, C.abilities.redStrike.meleeRange);
+
     ctx.save();
     ctx.translate(this.x, this.y);
 
