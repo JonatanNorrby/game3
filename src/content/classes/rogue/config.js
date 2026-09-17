@@ -13,13 +13,13 @@ export const ROGUE_CONFIG = {
     vial: '#8cff86',
     sprint: '#d0c2ff',
     execute: '#d5b1ff',
+    reclaim: '#7fffb0',
   },
   poison: {
     weaponDuration: 18,
     targetDuration: 8,
     tickEvery: 1,
     damagePerTick: 10,
-    lifestealPercent: 0.5,
     sprintCooldownReductionPerTick: 1,
   },
   comboPoints: {
@@ -57,6 +57,14 @@ export const ROGUE_CONFIG = {
       duration: 4,
       speedMultiplier: 1.75,
       castDisplay: 'Instant · poison ticks reduce cooldown',
+    },
+    reclaim: {
+      name: 'Venom Reclaim',
+      description: 'Consume the active poison on your selected enemy to restore 40 health. Does not consume your weapon-poison buff.',
+      icon: './assets/classes/rogue/abilities/venom-reclaim.svg',
+      cooldown: 8,
+      heal: 40,
+      castDisplay: 'Instant · consumes target poison · heals 40',
     },
     execute: {
       name: 'Execute',
