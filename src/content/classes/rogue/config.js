@@ -12,6 +12,7 @@ export const ROGUE_CONFIG = {
     poison: '#73df78',
     vial: '#8cff86',
     sprint: '#d0c2ff',
+    execute: '#d5b1ff',
   },
   poison: {
     weaponDuration: 18,
@@ -21,6 +22,10 @@ export const ROGUE_CONFIG = {
     lifestealPercent: 0.5,
     sprintCooldownReductionPerTick: 1,
   },
+  comboPoints: {
+    max: 4,
+    gainPerPoisonedSlash: 1,
+  },
   vial: {
     pickupRadius: 42,
     radius: 15,
@@ -29,12 +34,12 @@ export const ROGUE_CONFIG = {
   abilities: {
     slash: {
       name: 'Venom Slash',
-      description: 'A fast melee slash. While your weapons are poisoned, the hit poisons the boss.',
+      description: 'A fast melee slash. Hitting an enemy that is already poisoned generates 1 Combo Point. Poisoned weapons apply or refresh poison.',
       icon: './assets/classes/rogue/abilities/venom-slash.svg',
       cooldown: 0.75,
       damage: 32,
       meleeRange: 145,
-      castDisplay: 'Instant · melee range',
+      castDisplay: 'Instant · melee range · builds Combo Points',
     },
     knife: {
       name: 'Knife Throw',
@@ -62,6 +67,16 @@ export const ROGUE_CONFIG = {
       duration: 4,
       speedMultiplier: 1.75,
       castDisplay: 'Instant · poison ticks reduce cooldown',
+    },
+    execute: {
+      name: 'Execute',
+      description: 'Spend 4 Combo Points to deliver a devastating melee finisher. Can only be used on a poisoned enemy.',
+      icon: './assets/classes/rogue/abilities/execute.svg',
+      cooldown: 0.8,
+      damage: 115,
+      meleeRange: 145,
+      comboPointCost: 4,
+      castDisplay: 'Instant · melee range · costs 4 Combo Points',
     },
   },
 };
