@@ -56,6 +56,7 @@ export class Rogue {
       slash: 'useSlash',
       vial: 'useVial',
       sprint: 'useSprint',
+      reclaim: 'useReclaim',
       execute: 'useExecute',
     }[id];
     if (method) this[method]();
@@ -82,6 +83,14 @@ export class Rogue {
       return { available: false, reason: 'Move into melee range' };
     }
     if (id === 'vial' && this.vial) return { available: false, reason: 'Pick up the active poison vial first' };
+    if (id === 'reclaim') {
+      if (!this.isTargetPoisoned(target)) {
+        return { available: false, reason: 'Target must be poisoned' };
+      }
+      if (this.health >= C.maxHealth) {
+        return { available: false, reason: 'Already at full health' };
+      }
+    }
     if (id === 'execute') {
       if (this.comboPoints < ability.comboPointCost) {
         return { available: false, reason: `Need ${ability.comboPointCost} Combo Points` };
@@ -160,6 +169,28 @@ export class Rogue {
     this.game.flashMessage('Sprint');
   }
 
+  useReclaim() {
+    const a = C.abilities.reclaim;
+    if (!this.canUse('reclaim')) return;
+    const target = this.getTarget();
+    if (!target || !this.isTargetPoisoned(target)) {
+      this.game.flashMessage('Venom Reclaim requires a poisoned target');
+      return;
+    }
+    if (this.health >= C.maxHealth) {
+      this.game.flashMessage('Already at full health');
+      return;
+    }
+
+    this.targetPoisons.delete(target);
+    this.cooldowns.reclaim = a.cooldown;
+    this.game.spawnProjectile(target, this, C.visual.reclaim, 0.28);
+    this.game.spawnBurst(target.x, target.y, C.visual.reclaim, 42);
+    this.game.spawnBurst(this.x, this.y, C.visual.reclaim, 48);
+    this.heal(a.heal);
+    this.game.flashMessage('VENOM RECLAIM');
+  }
+
   useExecute() {
     const a = C.abilities.execute;
     if (!this.canUse('execute')) return;
@@ -234,7 +265,6 @@ export class Rogue {
       while (poison.tickTimer <= 0 && poison.remaining > -0.001 && target.alive !== false) {
         poison.tickTimer += C.poison.tickEvery;
         target.takeDamage(C.poison.damagePerTick, 'Poison');
-        this.heal(C.poison.damagePerTick * C.poison.lifestealPercent);
         this.cooldowns.sprint = Math.max(0, (this.cooldowns.sprint ?? 0) - C.poison.sprintCooldownReductionPerTick);
         this.game.spawnBurst(target.x, target.y, C.visual.poison, 24);
       }
