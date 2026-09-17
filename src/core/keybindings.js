@@ -8,6 +8,7 @@ export const KEYBIND_DEFINITIONS = [
   { id: 'ability3', label: 'Ability 3', defaultKey: '3' },
   { id: 'ability4', label: 'Ability 4', defaultKey: '4' },
   { id: 'ability5', label: 'Ability 5', defaultKey: '5' },
+  { id: 'ability6', label: 'Ability 6', defaultKey: '6' },
 ];
 
 export const DEFAULT_KEYBINDS = Object.fromEntries(
