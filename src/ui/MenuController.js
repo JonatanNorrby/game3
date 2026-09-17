@@ -18,6 +18,8 @@ export class MenuController {
     this.bossList = document.getElementById('boss-list');
     this.keybindList = document.getElementById('keybind-list');
     this.versionLabels = document.querySelectorAll('[data-game-version]');
+    this.resumeButton = document.getElementById('menu-resume');
+    this.canResumeEncounter = false;
 
     this.bindStaticButtons();
     this.game.input.onBindingsChanged(() => this.renderKeybinds());
@@ -29,6 +31,7 @@ export class MenuController {
   }
 
   bindStaticButtons() {
+    this.resumeButton.addEventListener('click', () => this.resumeEncounter());
     document.getElementById('menu-play').addEventListener('click', () => this.show('classes'));
     document.getElementById('menu-settings-button').addEventListener('click', () => this.show('settings'));
     document.getElementById('class-back').addEventListener('click', () => this.show('main'));
@@ -41,10 +44,32 @@ export class MenuController {
 
   openMain() {
     if (this.hudCustomizer.isOpen()) this.hudCustomizer.close();
+
+    if (this.game.state === 'playing') this.canResumeEncounter = true;
+    if (this.game.state === 'defeat' || this.game.state === 'victory') this.canResumeEncounter = false;
+
     this.game.enterMenu();
     this.overlay.classList.remove('hidden');
     this.app.classList.add('menu-open');
+    this.syncResumeButton();
     this.show('main');
+  }
+
+  resumeEncounter() {
+    if (!this.canResumeEncounter || !this.game.player?.alive || !this.game.boss?.alive) {
+      this.canResumeEncounter = false;
+      this.syncResumeButton();
+      return;
+    }
+
+    this.canResumeEncounter = false;
+    this.game.state = 'playing';
+    this.game.input.clear();
+    this.close();
+  }
+
+  syncResumeButton() {
+    this.resumeButton.classList.toggle('hidden', !this.canResumeEncounter);
   }
 
   close() {
@@ -56,6 +81,7 @@ export class MenuController {
     for (const [name, element] of Object.entries(this.views)) {
       element.classList.toggle('hidden', name !== viewName);
     }
+    if (viewName === 'main') this.syncResumeButton();
     if (viewName === 'classes') this.renderClasses();
     if (viewName === 'bosses') this.renderBosses();
     if (viewName === 'settings') this.renderKeybinds();
@@ -96,6 +122,7 @@ export class MenuController {
       card.innerHTML = `<span class="boss-card-title">${entry.name}</span><span class="boss-card-description">${entry.description}</span><span class="boss-card-state">${entry.unlocked ? `Fight as ${this.game.player.config.name}` : `Locked${entry.unlockRequirement ? ` · ${entry.unlockRequirement}` : ''}`}</span>`;
       if (entry.unlocked) {
         card.addEventListener('click', () => {
+          this.canResumeEncounter = false;
           this.game.startEncounter(index);
           this.close();
         });
