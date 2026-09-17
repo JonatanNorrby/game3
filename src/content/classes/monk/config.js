@@ -18,7 +18,7 @@ export const MONK_CONFIG = {
   abilities: {
     blueStrike: {
       name: 'Azure Palm',
-      description: 'Low-cooldown melee strike. BLUE → GREEN grants a shield. BLUE → RED fires an energy ball.',
+      description: 'Low-cooldown melee strike. BLUE → GREEN grants a shield. BLUE → RED grants a short speed boost.',
       icon: './assets/classes/monk/abilities/azure-palm.svg',
       cooldown: 1.4,
       damage: 25,
@@ -62,9 +62,9 @@ export const MONK_CONFIG = {
       duration: 6,
     },
     blueRed: {
-      name: 'Chi Bolt',
-      damage: 58,
-      projectileDuration: 0.28,
+      name: 'Windstep',
+      speedMultiplier: 1.6,
+      duration: 3,
     },
     greenBlue: {
       name: 'Restoring Touch',
