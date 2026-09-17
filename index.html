@@ -18,7 +18,7 @@
       <div><strong>RAIDFORGE</strong><span class="muted">solo raid prototype</span></div>
       <div class="topbar-right">
         <span id="encounter-label">Boss 1 / 1</span>
-        <span id="version-label" data-game-version>v0.4.1</span>
+        <span id="version-label" data-game-version>v0.5.0</span>
         <button id="hud-menu-button" class="hud-menu-button" type="button">Menu</button>
       </div>
     </header>
@@ -33,8 +33,12 @@
     </section>
 
     <section class="player-frame hud-panel hud-customizable" data-hud-id="player">
-      <div class="status-line"><strong>Arcane Mage</strong><span id="player-hp-text">100 / 100</span></div>
+      <div class="status-line"><strong id="player-name">Arcane Mage</strong><span id="player-hp-text">100 / 100</span></div>
       <div class="bar"><div id="player-hp" class="bar-fill player-fill"></div></div>
+      <div id="player-resource-wrap" class="player-resource-wrap hidden">
+        <div class="resource-label"><span id="player-resource-name">Mana</span><span id="player-resource-text">100 / 100</span></div>
+        <div class="bar small"><div id="player-resource" class="bar-fill player-resource-fill"></div></div>
+      </div>
       <div id="player-cast-wrap" class="cast-wrap hidden">
         <div class="cast-label"><span id="player-cast-name"></span><span id="player-cast-time"></span></div>
         <div class="bar small"><div id="player-cast" class="bar-fill player-cast-fill"></div></div>
@@ -52,10 +56,16 @@
         <h1>RAIDFORGE</h1>
         <p class="menu-copy">Read the encounter, execute mechanics, keep yourself alive, and burn the boss down.</p>
         <div class="menu-actions">
-          <button id="menu-play" class="menu-primary" type="button">Choose Boss</button>
+          <button id="menu-play" class="menu-primary" type="button">Choose Class & Boss</button>
           <button id="menu-settings-button" type="button">Settings</button>
         </div>
-        <div class="menu-version" data-game-version>v0.4.1</div>
+        <div class="menu-version" data-game-version>v0.5.0</div>
+      </div>
+
+      <div id="menu-classes" class="menu-card menu-view menu-wide hidden">
+        <div class="menu-heading-row"><div><div class="menu-kicker">Playable Classes</div><h2>Choose Class</h2></div><button id="class-back" class="menu-back" type="button">Back</button></div>
+        <p class="menu-copy">Each class has its own combat loop, resources, abilities, tuning, and future animation assets.</p>
+        <div id="class-list" class="class-list"></div>
       </div>
 
       <div id="menu-bosses" class="menu-card menu-view menu-wide hidden">
