@@ -1,5 +1,5 @@
 // All Arcane Mage tuning and presentation metadata lives here.
-const MAX_ARCANE_MISSILES = 6;
+const MAX_ARCANE_STACKS = 6;
 
 export const ARCANE_MAGE_CONFIG = {
   id: 'arcane-mage',
@@ -14,50 +14,44 @@ export const ARCANE_MAGE_CONFIG = {
     anchor: '#78f0dc',
   },
   resources: {
-    arcaneMissiles: {
-      name: 'Stored Missiles',
-      max: MAX_ARCANE_MISSILES,
+    arcaneStacks: {
+      name: 'Arcane Stacks',
+      max: MAX_ARCANE_STACKS,
     },
   },
   abilities: {
     renew: {
       name: 'Temporal Mend',
-      description: 'Heal over time: 48 health over 6 sec.',
+      description: 'Consume all Arcane Stacks to heal over time. Each stack adds 12 healing and 2 sec duration, up to 6 stacks.',
       icon: './assets/classes/arcane-mage/abilities/temporal-mend.svg',
       cooldown: 8,
-      duration: 6,
+      castDisplay: 'Instant · consumes all Arcane Stacks',
+      resource: 'arcaneStacks',
+      healPerStack: 12,
+      durationPerStack: 2,
       tickEvery: 1,
-      healPerTick: 8,
-    },
-    directHeal: {
-      name: 'Arcane Restoration',
-      description: 'Restore 34 health after a short cast.',
-      icon: './assets/classes/arcane-mage/abilities/arcane-restoration.svg',
-      cooldown: 3.5,
-      castTime: 1.1,
-      heal: 34,
     },
     missiles: {
       legacyIds: ['barrage'],
       name: 'Arcane Missiles',
-      description: 'Channel every stored missile at the boss while moving. Arcane Bolt stores one missile, up to 6.',
+      description: 'Channel one missile per Arcane Stack at the boss while moving. Arcane Bolt builds up to 6 stacks.',
       icon: './assets/classes/arcane-mage/abilities/arcane-missiles.svg',
       cooldown: 0,
       castDisplay: 'Mobile channel · 0.22 sec per missile',
-      resource: 'arcaneMissiles',
+      resource: 'arcaneStacks',
       timePerMissile: 0.22,
       damagePerMissile: 28,
       projectileDuration: 0.18,
     },
     filler: {
       name: 'Arcane Bolt',
-      description: 'Deal 34 damage and store 1 Arcane Missile, up to 6.',
+      description: 'Deal 34 damage and gain 1 Arcane Stack, up to 6.',
       icon: './assets/classes/arcane-mage/abilities/arcane-bolt.svg',
       cooldown: 0,
       castTime: 0.9,
       damage: 34,
       generates: {
-        resource: 'arcaneMissiles',
+        resource: 'arcaneStacks',
         amount: 1,
       },
     },
