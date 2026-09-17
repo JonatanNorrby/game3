@@ -76,7 +76,7 @@ export class AbilityBar {
       const cooldown = ability.cooldown ?? ability.cooldownAfterRecall ?? 0;
       facts.push(cooldown > 0 ? `${cooldown} sec cooldown` : 'No cooldown');
 
-      button.innerHTML = `<img class="ability-icon" src="${ability.icon}" alt="" draggable="false"><span class="ability-resource hidden"></span><span class="ability-key"></span><span class="ability-cd hidden"></span><span class="ability-tooltip" role="tooltip"><strong>${ability.name}</strong><span class="ability-tooltip-description">${ability.description}</span><span class="ability-tooltip-meta">${facts.join(' · ')}</span><span class="ability-tooltip-drag">Shift + drag to move</span></span>`;
+      button.innerHTML = `<img class="ability-icon" src="${ability.icon}" alt="" draggable="false"><span class="ability-resource hidden"></span><span class="ability-key"></span><span class="ability-cd hidden"></span><span class="ability-tooltip" role="tooltip"><strong>${ability.name}</strong><span class="ability-tooltip-description">${ability.description}</span><span class="ability-tooltip-meta">${facts.join(' · ')}</span><span class="ability-tooltip-status hidden"></span><span class="ability-tooltip-drag">Shift + drag to move</span></span>`;
       button.setAttribute('aria-label', `${ability.name}: ${ability.description}`);
 
       button.addEventListener('click', (event) => {
@@ -124,8 +124,8 @@ export class AbilityBar {
     if (!this.drag || event.pointerId !== this.drag.pointerId) return;
     event.preventDefault();
 
-    const distance = Math.hypot(event.clientX - this.drag.startX, event.clientY - this.drag.startY);
-    if (distance < 4 && !this.drag.moved) return;
+    const dragDistance = Math.hypot(event.clientX - this.drag.startX, event.clientY - this.drag.startY);
+    if (dragDistance < 4 && !this.drag.moved) return;
     this.drag.moved = true;
 
     const target = document.elementFromPoint(event.clientX, event.clientY)?.closest('.ability');
@@ -182,18 +182,31 @@ export class AbilityBar {
 
   updatePlayerState(player) {
     for (const button of this.container.querySelectorAll('.ability')) {
-      const state = player.getAbilityResourceState?.(button.dataset.ability) ?? null;
+      const abilityId = button.dataset.ability;
+      const resourceState = player.getAbilityResourceState?.(abilityId) ?? null;
       const badge = button.querySelector('.ability-resource');
-      button.classList.toggle('ability-empty', Boolean(state && state.current <= 0));
+      button.classList.toggle('ability-empty', Boolean(resourceState && resourceState.current <= 0));
 
-      if (!state) {
+      if (!resourceState) {
         badge.classList.add('hidden');
-        continue;
+      } else {
+        badge.textContent = `${resourceState.current}/${resourceState.max}`;
+        badge.title = resourceState.label;
+        badge.classList.remove('hidden');
       }
 
-      badge.textContent = `${state.current}/${state.max}`;
-      badge.title = state.label;
-      badge.classList.remove('hidden');
+      const availability = player.getAbilityAvailability?.(abilityId) ?? { available: true };
+      const unavailable = availability.available === false;
+      button.classList.toggle('ability-unavailable', unavailable);
+      button.setAttribute('aria-disabled', unavailable ? 'true' : 'false');
+
+      const status = button.querySelector('.ability-tooltip-status');
+      if (unavailable && availability.reason) {
+        status.textContent = availability.reason;
+        status.classList.remove('hidden');
+      } else {
+        status.classList.add('hidden');
+      }
     }
   }
 }
