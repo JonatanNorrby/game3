@@ -46,14 +46,6 @@ export const MONK_CONFIG = {
       color: 'red',
       castDisplay: 'Instant · melee range',
     },
-    roll: {
-      name: 'Flowing Roll',
-      description: 'Roll a long distance in your held movement direction. If stationary, roll away from the boss.',
-      icon: './assets/classes/monk/abilities/flowing-roll.svg',
-      cooldown: 7,
-      distance: 260,
-      castDisplay: 'Instant movement',
-    },
   },
   combos: {
     blueGreen: {
@@ -63,7 +55,7 @@ export const MONK_CONFIG = {
     },
     blueRed: {
       name: 'Windstep',
-      speedMultiplier: 1.6,
+      speedMultiplier: 2,
       duration: 3,
     },
     greenBlue: {
