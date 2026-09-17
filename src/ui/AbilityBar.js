@@ -145,6 +145,9 @@ export class AbilityBar {
     }
 
     this.drag = null;
+    setTimeout(() => {
+      if (button.dataset.suppressClick === 'true') delete button.dataset.suppressClick;
+    }, 0);
   }
 
   refreshBindings() {
