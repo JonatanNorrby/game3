@@ -120,7 +120,7 @@ export class Game {
       abilities: barConfig.abilities,
       input: this.input,
       onUse: (abilityId) => {
-        if (this.state === 'playing') this.player.useAbility(abilityId);
+        if (this.state === 'playing') this.usePlayerAbility(abilityId);
       },
     });
     this.refreshAbilityBindings();
@@ -139,14 +139,28 @@ export class Game {
     this.abilityBar?.refreshBindings();
     const movement = ['moveUp', 'moveLeft', 'moveDown', 'moveRight'].map((action) => formatKey(this.input.getBinding(action))).join('/');
     const targetKey = formatKey(this.input.getBinding('targetNext'));
-    this.ui.help.innerHTML = `Move: <b>${movement}</b> · Target: <b>${targetKey}</b> · Hover for details · <b>Shift + drag</b> abilities to reorder`;
+    const interactKey = formatKey(this.input.getBinding('interact'));
+    this.ui.help.innerHTML = `Move: <b>${movement}</b> · Target: <b>${targetKey}</b> · Interact: <b>${interactKey}</b> · Hover for details · <b>Shift + drag</b> abilities to reorder`;
+  }
+
+  isPlayerSilenced() {
+    return this.boss?.isPlayerSilenced?.(this.player) === true;
+  }
+
+  usePlayerAbility(abilityId) {
+    if (this.isPlayerSilenced()) {
+      this.flashMessage('SILENCED — leave the green zone', 0.9);
+      return false;
+    }
+    this.player.useAbility(abilityId);
+    return true;
   }
 
   handleAbilityInput() {
     for (let slot = 0; slot < this.abilityBar.slotCount; slot += 1) {
       if (!this.input.consumeAction(`ability${slot + 1}`)) continue;
       const abilityId = this.abilityBar.getAbilityIdAtSlot(slot);
-      if (abilityId) this.player.useAbility(abilityId);
+      if (abilityId) this.usePlayerAbility(abilityId);
     }
   }
 
@@ -203,6 +217,14 @@ export class Game {
     return this.currentTarget;
   }
 
+  interactWithTarget() {
+    const target = this.getCombatTarget();
+    if (!target) return false;
+    const handled = this.boss?.interactWithTarget?.(target, this.player) === true;
+    if (!handled) this.flashMessage('Nothing to interact with', 0.7);
+    return handled;
+  }
+
   selectClass(index) {
     const entry = this.classRoster[index];
     if (!entry) return false;
@@ -257,6 +279,7 @@ export class Game {
     if (this.state === 'playing') {
       this.ensureCombatTarget();
       if (this.input.consumeAction('targetNext')) this.cycleTarget();
+      if (this.input.consumeAction('interact')) this.interactWithTarget();
       this.player.update(dt, this.input);
       const specialInputHandled = this.player.handleSpecialInput?.(this.input) === true;
       if (!specialInputHandled) this.handleAbilityInput();
@@ -297,6 +320,33 @@ export class Game {
   spawnArenaFlash(color) { this.effects.push({ type: 'flash', color, duration: 0.22, remaining: 0.22 }); }
   spawnFloatingText(x, y, text, color) { this.floatingTexts.push({ x, y, text, color, remaining: 0.75, duration: 0.75 }); }
   flashMessage(text, duration = 1.1) { this.flashText = text; this.flashTimer = duration; }
+
+  playTone(frequency = 440, duration = 0.12, volume = 0.035, type = 'sine') {
+    try {
+      const AudioContextClass = window.AudioContext ?? window.webkitAudioContext;
+      if (!AudioContextClass) return;
+      if (!this.audioContext) this.audioContext = new AudioContextClass();
+
+      const play = () => {
+        const oscillator = this.audioContext.createOscillator();
+        const gain = this.audioContext.createGain();
+        const now = this.audioContext.currentTime;
+        oscillator.type = type;
+        oscillator.frequency.setValueAtTime(frequency, now);
+        gain.gain.setValueAtTime(Math.max(0, volume), now);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+        oscillator.connect(gain);
+        gain.connect(this.audioContext.destination);
+        oscillator.start(now);
+        oscillator.stop(now + duration);
+      };
+
+      if (this.audioContext.state === 'suspended') this.audioContext.resume().then(play).catch(() => {});
+      else play();
+    } catch {
+      // Audio cues are supplementary; gameplay must remain functional if Web Audio is unavailable.
+    }
+  }
 
   onPlayerDefeated(source) {
     this.state = 'defeat';
@@ -354,6 +404,8 @@ export class Game {
     const radius = target.config?.radius ?? target.radius ?? 28;
     const pulse = 4 + Math.sin(this.time * 6) * 3;
     const ringRadius = radius + 18 + pulse;
+    const interactKey = formatKey(this.input.getBinding('interact'));
+    const suffix = target.interactable ? ` · ${interactKey} INTERACT` : '';
 
     ctx.save();
     ctx.strokeStyle = '#ffd76a';
@@ -369,7 +421,7 @@ export class Game {
     ctx.shadowBlur = 0;
     ctx.font = '800 13px system-ui';
     ctx.textAlign = 'center';
-    ctx.fillText(`TARGET · ${this.getTargetName(target)}`, target.x, target.y - ringRadius - 12);
+    ctx.fillText(`TARGET · ${this.getTargetName(target)}${suffix}`, target.x, target.y - ringRadius - 12);
     ctx.restore();
   }
 
