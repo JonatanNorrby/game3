@@ -33,11 +33,15 @@ export class HudLayout {
   }
 
   sanitize(layout) {
+    const numberOr = (value, fallback) => {
+      const parsed = Number(value);
+      return Number.isFinite(parsed) ? parsed : fallback;
+    };
     return {
-      x: clamp(Number(layout.x) || 0.5, 0.02, 0.98),
-      y: clamp(Number(layout.y) || 0.5, 0.02, 0.98),
-      scale: clamp(Number(layout.scale) || 1, 0.55, 1.6),
-      opacity: clamp(Number(layout.opacity) || 1, 0.2, 1),
+      x: clamp(numberOr(layout.x, 0.5), 0.02, 0.98),
+      y: clamp(numberOr(layout.y, 0.5), 0.02, 0.98),
+      scale: clamp(numberOr(layout.scale, 1), 0.55, 1.6),
+      opacity: clamp(numberOr(layout.opacity, 1), 0.2, 1),
       visible: layout.visible !== false,
     };
   }
