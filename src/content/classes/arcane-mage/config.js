@@ -5,6 +5,7 @@ export const ARCANE_MAGE_CONFIG = {
   maxHealth: 100,
   moveSpeed: 255,
   radius: 18,
+  spawn: { x: 0.5, y: 0.79 },
   visual: {
     body: '#79b8ff',
     core: '#d8efff',
