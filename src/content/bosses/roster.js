@@ -8,6 +8,8 @@ import { FurnaceHeart } from './furnace-heart/FurnaceHeart.js';
 import { FURNACE_HEART_CONFIG } from './furnace-heart/config.js';
 import { Choir } from './choir/Choir.js';
 import { CHOIR_CONFIG } from './choir/config.js';
+import { LivingLibrary } from './living-library/LivingLibrary.js';
+import { LIVING_LIBRARY_CONFIG } from './living-library/config.js';
 
 // Boss progression lives here. Each entry exposes its config so the game can
 // configure arena dimensions before spawning the player or boss.
@@ -56,5 +58,14 @@ export const BOSS_ROSTER = [
     unlockRequirement: null,
     config: CHOIR_CONFIG,
     BossClass: Choir,
+  },
+  {
+    id: LIVING_LIBRARY_CONFIG.id,
+    name: LIVING_LIBRARY_CONFIG.name,
+    description: 'Read floating spellbooks to predict incoming mechanics, or destroy books to erase those attacks while permanently empowering the Library.',
+    unlocked: true,
+    unlockRequirement: null,
+    config: LIVING_LIBRARY_CONFIG,
+    BossClass: LivingLibrary,
   },
 ];
