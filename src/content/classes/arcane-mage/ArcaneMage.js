@@ -25,8 +25,8 @@ export class ArcaneMage {
     for (const key of Object.keys(this.cooldowns)) this.cooldowns[key] = Math.max(0, this.cooldowns[key] - dt);
     this.updateEffects(dt);
 
-    const dx = (input.isHeld('d') ? 1 : 0) - (input.isHeld('a') ? 1 : 0);
-    const dy = (input.isHeld('s') ? 1 : 0) - (input.isHeld('w') ? 1 : 0);
+    const dx = (input.isActionHeld('moveRight') ? 1 : 0) - (input.isActionHeld('moveLeft') ? 1 : 0);
+    const dy = (input.isActionHeld('moveDown') ? 1 : 0) - (input.isActionHeld('moveUp') ? 1 : 0);
     const moving = dx !== 0 || dy !== 0;
 
     if (moving) {
@@ -40,11 +40,11 @@ export class ArcaneMage {
 
     this.updateCast(dt);
 
-    if (input.consume('1')) this.useRenew();
-    if (input.consume('2')) this.useDirectHeal();
-    if (input.consume('3')) this.useBarrage();
-    if (input.consume('4')) this.useFiller();
-    if (input.consume('5')) this.useTeleport();
+    if (input.consumeAction('ability1')) this.useRenew();
+    if (input.consumeAction('ability2')) this.useDirectHeal();
+    if (input.consumeAction('ability3')) this.useBarrage();
+    if (input.consumeAction('ability4')) this.useFiller();
+    if (input.consumeAction('ability5')) this.useTeleport();
   }
 
   canUse(id) {
