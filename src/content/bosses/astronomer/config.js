@@ -1,0 +1,71 @@
+// All Astronomer encounter tuning and star-map layout lives here.
+export const ASTRONOMER_CONFIG = {
+  id: 'astronomer',
+  name: 'The Astronomer',
+  arena: {
+    width: 2000,
+    height: 1250,
+    playerSpawn: { x: 0.5, y: 0.82 },
+  },
+  maxHealth: 2250,
+  radius: 44,
+  position: { x: 0.5, y: 0.23 },
+  visual: {
+    body: '#274166',
+    core: '#d9edff',
+    map: '#5f88ba',
+    star: '#91bfff',
+    expected: '#ffd96d',
+    completed: '#7ff0a8',
+    danger: '#ff6278',
+    warning: '#ffbf68',
+  },
+  encounter: {
+    openingDelay: 4,
+    majorInterval: 15,
+    minorInterval: 5.4,
+    phaseTwoHealthPercent: 68,
+    phaseThreeHealthPercent: 34,
+    rotationSpeedPhaseTwo: 0.075,
+    rotationSpeedPhaseThree: -0.14,
+  },
+  starMap: {
+    activationRadius: 52,
+    stars: [
+      { id: 'A', label: 'Aster', x: 0.24, y: 0.34 },
+      { id: 'B', label: 'Beacon', x: 0.50, y: 0.30 },
+      { id: 'C', label: 'Crown', x: 0.76, y: 0.35 },
+      { id: 'D', label: 'Dawn', x: 0.31, y: 0.55 },
+      { id: 'E', label: 'Eye', x: 0.69, y: 0.54 },
+      { id: 'F', label: 'Flare', x: 0.22, y: 0.75 },
+      { id: 'G', label: 'Gate', x: 0.50, y: 0.70 },
+      { id: 'H', label: 'Halo', x: 0.78, y: 0.76 },
+    ],
+    patterns: [
+      { name: 'The Spear', sequence: ['A', 'D', 'G'] },
+      { name: 'The Crown', sequence: ['C', 'B', 'E'] },
+      { name: 'The Voyager', sequence: ['F', 'D', 'B', 'H'] },
+      { name: 'The Eclipse', sequence: ['H', 'E', 'G', 'A'] },
+      { name: 'The Gate', sequence: ['B', 'D', 'G', 'E'] },
+    ],
+  },
+  major: {
+    name: 'Celestial Cataclysm',
+    castTime: 9,
+    damage: 72,
+    wrongStepDamage: 30,
+  },
+  minor: {
+    meteor: {
+      name: 'Falling Comets',
+      telegraphTime: 1.8,
+      radius: 76,
+      damage: 34,
+      countByPhase: [3, 4, 5],
+    },
+    pulse: {
+      name: 'Stellar Pulse',
+      damage: 16,
+    },
+  },
+};
