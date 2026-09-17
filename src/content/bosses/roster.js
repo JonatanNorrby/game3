@@ -6,6 +6,8 @@ import { Astronomer } from './astronomer/Astronomer.js';
 import { ASTRONOMER_CONFIG } from './astronomer/config.js';
 import { FurnaceHeart } from './furnace-heart/FurnaceHeart.js';
 import { FURNACE_HEART_CONFIG } from './furnace-heart/config.js';
+import { Choir } from './choir/Choir.js';
+import { CHOIR_CONFIG } from './choir/config.js';
 
 // Boss progression lives here. Each entry exposes its config so the game can
 // configure arena dimensions before spawning the player or boss.
@@ -45,5 +47,14 @@ export const BOSS_ROSTER = [
     unlockRequirement: null,
     config: FURNACE_HEART_CONFIG,
     BossClass: FurnaceHeart,
+  },
+  {
+    id: CHOIR_CONFIG.id,
+    name: CHOIR_CONFIG.name,
+    description: 'Learn four distinct sung notes, then survive later movements where the floating heads combine those mechanics into simultaneous chords.',
+    unlocked: true,
+    unlockRequirement: null,
+    config: CHOIR_CONFIG,
+    BossClass: Choir,
   },
 ];
