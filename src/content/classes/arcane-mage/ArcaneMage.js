@@ -42,7 +42,6 @@ export class ArcaneMage {
   useAbility(id) {
     const method = {
       renew: 'useRenew',
-      directHeal: 'useDirectHeal',
       missiles: 'useArcaneMissiles',
       barrage: 'useArcaneMissiles',
       filler: 'useFiller',
@@ -78,21 +77,30 @@ export class ArcaneMage {
   canUse(id) { return this.alive && !this.cast && (this.cooldowns[id] ?? 0) <= 0 && this.game.boss?.alive; }
 
   useRenew() {
-    if (!this.canUse('renew')) return;
     const a = C.abilities.renew;
+    if (!this.canUse('renew')) return;
+
+    const stackCount = this.getResource(a.resource);
+    if (stackCount <= 0) {
+      this.game.flashMessage('Cast Arcane Bolt to build Arcane Stacks');
+      return;
+    }
+
+    this.resources[a.resource] = 0;
     this.cooldowns.renew = a.cooldown;
     this.effects = this.effects.filter((effect) => effect.id !== 'renew');
-    this.effects.push({ id: 'renew', remaining: a.duration, tickTimer: 0 });
-    this.game.flashMessage('Temporal Mend');
-  }
 
-  useDirectHeal() {
-    if (!this.canUse('directHeal')) return;
-    const a = C.abilities.directHeal;
-    this.startCast('directHeal', a.name, a.castTime, () => {
-      this.heal(a.heal);
-      this.cooldowns.directHeal = a.cooldown;
+    const duration = a.durationPerStack * stackCount;
+    const totalHealing = a.healPerStack * stackCount;
+    const ticks = Math.max(1, Math.round(duration / a.tickEvery));
+    this.effects.push({
+      id: 'renew',
+      remaining: duration,
+      tickTimer: a.tickEvery,
+      ticksRemaining: ticks,
+      healPerTick: totalHealing / ticks,
     });
+    this.game.flashMessage(`${a.name} ×${stackCount}`);
   }
 
   useArcaneMissiles() {
@@ -101,7 +109,7 @@ export class ArcaneMage {
 
     const missileCount = this.getResource(a.resource);
     if (missileCount <= 0) {
-      this.game.flashMessage('Cast Arcane Bolt to store missiles');
+      this.game.flashMessage('Cast Arcane Bolt to build Arcane Stacks');
       return;
     }
 
@@ -130,7 +138,7 @@ export class ArcaneMage {
       const after = this.addResource(resourceId, a.generates.amount);
       if (after > before) {
         const max = C.resources[resourceId].max;
-        this.game.spawnFloatingText(this.x, this.y - 48, `Missiles ${after}/${max}`, '#c8b8ff');
+        this.game.spawnFloatingText(this.x, this.y - 48, `Arcane ${after}/${max}`, '#c8b8ff');
       }
     });
   }
@@ -198,12 +206,16 @@ export class ArcaneMage {
     for (const effect of this.effects) {
       effect.remaining -= dt;
       effect.tickTimer -= dt;
-      if (effect.id === 'renew' && effect.tickTimer <= 0) {
-        effect.tickTimer += renew.tickEvery;
-        this.heal(renew.healPerTick);
+
+      if (effect.id === 'renew' && effect.ticksRemaining > 0) {
+        while (effect.tickTimer <= 0 && effect.ticksRemaining > 0) {
+          effect.tickTimer += renew.tickEvery;
+          effect.ticksRemaining -= 1;
+          this.heal(effect.healPerTick);
+        }
       }
     }
-    this.effects = this.effects.filter((effect) => effect.remaining > 0);
+    this.effects = this.effects.filter((effect) => effect.remaining > 0 && (effect.id !== 'renew' || effect.ticksRemaining > 0));
   }
 
   heal(amount) {
