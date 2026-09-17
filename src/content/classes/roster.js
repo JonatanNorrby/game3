@@ -2,6 +2,8 @@ import { ArcaneMage } from './arcane-mage/ArcaneMage.js';
 import { ARCANE_MAGE_CONFIG } from './arcane-mage/config.js';
 import { Paladin } from './paladin/Paladin.js';
 import { PALADIN_CONFIG } from './paladin/config.js';
+import { Hunter } from './hunter/Hunter.js';
+import { HUNTER_CONFIG } from './hunter/config.js';
 
 export const CLASS_ROSTER = [
   {
@@ -19,5 +21,13 @@ export const CLASS_ROSTER = [
     description: 'Fight close to the boss, manage mana, maintain a holy damage-over-time effect, and trade casting time for powerful healing and recovery.',
     PlayerClass: Paladin,
     config: PALADIN_CONFIG,
+  },
+  {
+    id: HUNTER_CONFIG.id,
+    name: HUNTER_CONFIG.name,
+    role: HUNTER_CONFIG.role,
+    description: 'Build Fury with Bow Shot, coordinate a damageable Tiger companion, and choose when to expose or recall the pet during raid mechanics.',
+    PlayerClass: Hunter,
+    config: HUNTER_CONFIG,
   },
 ];
