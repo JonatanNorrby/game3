@@ -10,6 +10,8 @@ import { Choir } from './choir/Choir.js';
 import { CHOIR_CONFIG } from './choir/config.js';
 import { LivingLibrary } from './living-library/LivingLibrary.js';
 import { LIVING_LIBRARY_CONFIG } from './living-library/config.js';
+import { TwinMagi } from './twin-magi/TwinMagi.js';
+import { TWIN_MAGI_CONFIG } from './twin-magi/config.js';
 
 // Boss progression lives here. Each entry exposes its config so the game can
 // configure arena dimensions before spawning the player or boss.
@@ -67,5 +69,14 @@ export const BOSS_ROSTER = [
     unlockRequirement: null,
     config: LIVING_LIBRARY_CONFIG,
     BossClass: LivingLibrary,
+  },
+  {
+    id: TWIN_MAGI_CONFIG.id,
+    name: TWIN_MAGI_CONFIG.name,
+    description: 'Alternate between Solar and Void Magi to suppress cross-empowerment, then survive their merged final form where both schools cast together.',
+    unlocked: true,
+    unlockRequirement: null,
+    config: TWIN_MAGI_CONFIG,
+    BossClass: TwinMagi,
   },
 ];
