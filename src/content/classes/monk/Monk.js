@@ -20,6 +20,7 @@ export class Monk {
     this.cast = null;
     this.comboStarter = null;
     this.shield = { amount: 0, remaining: 0 };
+    this.speedBoost = { multiplier: 1, remaining: 0 };
     this.currentMove = null;
     this.lastMove = { x: 0, y: -1 };
     this.alive = true;
@@ -34,6 +35,7 @@ export class Monk {
 
     this.updateEffects(dt);
     this.updateShield(dt);
+    this.updateSpeedBoost(dt);
 
     const dx = (input.isActionHeld('moveRight') ? 1 : 0) - (input.isActionHeld('moveLeft') ? 1 : 0);
     const dy = (input.isActionHeld('moveDown') ? 1 : 0) - (input.isActionHeld('moveUp') ? 1 : 0);
@@ -43,8 +45,9 @@ export class Monk {
       const length = Math.hypot(dx, dy);
       this.currentMove = { x: dx / length, y: dy / length };
       this.lastMove = this.currentMove;
-      this.x += this.currentMove.x * C.moveSpeed * dt;
-      this.y += this.currentMove.y * C.moveSpeed * dt;
+      const moveSpeed = C.moveSpeed * this.speedBoost.multiplier;
+      this.x += this.currentMove.x * moveSpeed * dt;
+      this.y += this.currentMove.y * moveSpeed * dt;
       this.clampPosition();
       this.resolveBossCollision();
     }
@@ -107,6 +110,10 @@ export class Monk {
       this.shield.amount = combo.shield;
       this.shield.remaining = combo.duration;
       this.game.spawnBurst(this.x, this.y, C.visual.shield, 50);
+    } else if (combo.speedMultiplier) {
+      this.speedBoost.multiplier = combo.speedMultiplier;
+      this.speedBoost.remaining = combo.duration;
+      this.game.spawnBurst(this.x, this.y, C.visual.blue, 44);
     } else if (combo.damage && key !== 'redGreen') {
       this.game.spawnProjectile(this, this.game.boss, C.visual.blue, combo.projectileDuration ?? 0.3);
       this.game.damageBoss(combo.damage, combo.name);
@@ -168,6 +175,17 @@ export class Monk {
 
     this.shield.remaining = Math.max(0, this.shield.remaining - dt);
     if (this.shield.remaining <= 0) this.shield.amount = 0;
+  }
+
+  updateSpeedBoost(dt) {
+    if (this.speedBoost.remaining <= 0) {
+      this.speedBoost.multiplier = 1;
+      this.speedBoost.remaining = 0;
+      return;
+    }
+
+    this.speedBoost.remaining = Math.max(0, this.speedBoost.remaining - dt);
+    if (this.speedBoost.remaining <= 0) this.speedBoost.multiplier = 1;
   }
 
   useRoll() {
@@ -263,6 +281,16 @@ export class Monk {
   draw(ctx) {
     ctx.save();
     ctx.translate(this.x, this.y);
+
+    if (this.speedBoost.remaining > 0) {
+      ctx.strokeStyle = C.visual.blue;
+      ctx.lineWidth = 3;
+      ctx.globalAlpha = 0.65;
+      ctx.beginPath();
+      ctx.arc(0, 0, C.radius + 15, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
 
     if (this.shield.amount > 0 && this.shield.remaining > 0) {
       ctx.strokeStyle = C.visual.shield;
