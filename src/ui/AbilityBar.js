@@ -20,12 +20,21 @@ export class AbilityBar {
     return `${STORAGE_PREFIX}.${this.classId}.v1`;
   }
 
+  resolveSavedId(savedId) {
+    if (this.abilities[savedId]) return savedId;
+    for (const [id, ability] of Object.entries(this.abilities)) {
+      if (ability.legacyIds?.includes(savedId)) return id;
+    }
+    return null;
+  }
+
   loadOrder() {
     try {
       const saved = JSON.parse(localStorage.getItem(this.storageKey) ?? '[]');
       if (!Array.isArray(saved)) return [...this.defaultOrder];
 
-      const valid = saved.filter((id, index) => this.abilities[id] && saved.indexOf(id) === index);
+      const migrated = saved.map((id) => this.resolveSavedId(id)).filter(Boolean);
+      const valid = migrated.filter((id, index) => migrated.indexOf(id) === index);
       for (const id of this.defaultOrder) {
         if (!valid.includes(id)) valid.push(id);
       }
@@ -63,11 +72,11 @@ export class AbilityBar {
       button.type = 'button';
 
       const facts = [];
-      facts.push(ability.castTime ? `${ability.castTime.toFixed(1)} sec cast` : 'Instant');
+      facts.push(ability.castDisplay ?? (ability.castTime ? `${ability.castTime.toFixed(1)} sec cast` : 'Instant'));
       const cooldown = ability.cooldown ?? ability.cooldownAfterRecall ?? 0;
       facts.push(cooldown > 0 ? `${cooldown} sec cooldown` : 'No cooldown');
 
-      button.innerHTML = `<img class="ability-icon" src="${ability.icon}" alt="" draggable="false"><span class="ability-key"></span><span class="ability-cd hidden"></span><span class="ability-tooltip" role="tooltip"><strong>${ability.name}</strong><span class="ability-tooltip-description">${ability.description}</span><span class="ability-tooltip-meta">${facts.join(' · ')}</span><span class="ability-tooltip-drag">Shift + drag to move</span></span>`;
+      button.innerHTML = `<img class="ability-icon" src="${ability.icon}" alt="" draggable="false"><span class="ability-resource hidden"></span><span class="ability-key"></span><span class="ability-cd hidden"></span><span class="ability-tooltip" role="tooltip"><strong>${ability.name}</strong><span class="ability-tooltip-description">${ability.description}</span><span class="ability-tooltip-meta">${facts.join(' · ')}</span><span class="ability-tooltip-drag">Shift + drag to move</span></span>`;
       button.setAttribute('aria-label', `${ability.name}: ${ability.description}`);
 
       button.addEventListener('click', (event) => {
@@ -168,6 +177,23 @@ export class AbilityBar {
       } else {
         overlay.classList.add('hidden');
       }
+    }
+  }
+
+  updatePlayerState(player) {
+    for (const button of this.container.querySelectorAll('.ability')) {
+      const state = player.getAbilityResourceState?.(button.dataset.ability) ?? null;
+      const badge = button.querySelector('.ability-resource');
+      button.classList.toggle('ability-empty', Boolean(state && state.current <= 0));
+
+      if (!state) {
+        badge.classList.add('hidden');
+        continue;
+      }
+
+      badge.textContent = `${state.current}/${state.max}`;
+      badge.title = state.label;
+      badge.classList.remove('hidden');
     }
   }
 }
