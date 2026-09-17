@@ -9,8 +9,8 @@ export class ArcaneWarden {
   }
 
   reset() {
-    this.x = C.position.x;
-    this.y = C.position.y;
+    this.x = this.game.width * C.position.x;
+    this.y = this.game.height * C.position.y;
     this.health = C.maxHealth;
     this.alive = true;
     this.sequenceIndex = 0;
@@ -58,11 +58,16 @@ export class ArcaneWarden {
 
   createRainZones(count) {
     const zones = [];
+    const sidePad = Math.max(80, this.game.width * 0.07);
+    const topPad = Math.max(130, this.game.height * 0.2);
+    const bottomPad = Math.max(100, this.game.height * 0.14);
+    const usableWidth = Math.max(1, this.game.width - sidePad * 2);
+    const usableHeight = Math.max(1, this.game.height - topPad - bottomPad);
+
     for (let i = 0; i < count; i += 1) {
-      const pad = 90;
       zones.push({
-        x: pad + Math.random() * (this.game.width - pad * 2),
-        y: 260 + Math.random() * (this.game.height - 340),
+        x: sidePad + Math.random() * usableWidth,
+        y: topPad + Math.random() * usableHeight,
       });
     }
     return zones;
