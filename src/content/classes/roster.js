@@ -8,6 +8,8 @@ import { Rogue } from './rogue/Rogue.js';
 import { ROGUE_CONFIG } from './rogue/config.js';
 import { Druid } from './druid/Druid.js';
 import { DRUID_CONFIG } from './druid/config.js';
+import { Monk } from './monk/Monk.js';
+import { MONK_CONFIG } from './monk/config.js';
 
 export const CLASS_ROSTER = [
   {
@@ -49,5 +51,13 @@ export const CLASS_ROSTER = [
     description: 'Shapeshift between Bear, Monkey, Puma, and Panda forms to trade between heavy attacks, mobility, fast damage, and healing.',
     PlayerClass: Druid,
     config: DRUID_CONFIG,
+  },
+  {
+    id: MONK_CONFIG.id,
+    name: MONK_CONFIG.name,
+    role: MONK_CONFIG.role,
+    description: 'Chain Blue, Green, and Red melee techniques in different orders to create shields, healing, projectiles, or damage over time, then Roll out of danger.',
+    PlayerClass: Monk,
+    config: MONK_CONFIG,
   },
 ];
