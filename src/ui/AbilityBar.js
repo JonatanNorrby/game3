@@ -167,9 +167,10 @@ export class AbilityBar {
     });
   }
 
-  updateCooldowns(cooldowns) {
+  updateCooldowns(cooldowns, globalCooldown = 0) {
     for (const button of this.container.querySelectorAll('.ability')) {
-      const cooldown = cooldowns[button.dataset.ability] ?? 0;
+      const personalCooldown = cooldowns[button.dataset.ability] ?? 0;
+      const cooldown = Math.max(personalCooldown, globalCooldown);
       const overlay = button.querySelector('.ability-cd');
       if (cooldown > 0.05) {
         overlay.textContent = cooldown.toFixed(cooldown < 1 ? 1 : 0);
@@ -180,7 +181,7 @@ export class AbilityBar {
     }
   }
 
-  updatePlayerState(player) {
+  updatePlayerState(player, globalCooldown = 0) {
     for (const button of this.container.querySelectorAll('.ability')) {
       const abilityId = button.dataset.ability;
       const resourceState = player.getAbilityResourceState?.(abilityId) ?? null;
@@ -196,13 +197,15 @@ export class AbilityBar {
       }
 
       const availability = player.getAbilityAvailability?.(abilityId) ?? { available: true };
-      const unavailable = availability.available === false;
+      const onGlobalCooldown = globalCooldown > 0.05;
+      const unavailable = onGlobalCooldown || availability.available === false;
       button.classList.toggle('ability-unavailable', unavailable);
       button.setAttribute('aria-disabled', unavailable ? 'true' : 'false');
 
       const status = button.querySelector('.ability-tooltip-status');
-      if (unavailable && availability.reason) {
-        status.textContent = availability.reason;
+      const reason = onGlobalCooldown ? `Global cooldown · ${globalCooldown.toFixed(1)}s` : availability.reason;
+      if (unavailable && reason) {
+        status.textContent = reason;
         status.classList.remove('hidden');
       } else {
         status.classList.add('hidden');
