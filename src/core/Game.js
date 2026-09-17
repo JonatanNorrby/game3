@@ -44,6 +44,7 @@ export class Game {
     this.pendingAbilityBarRebuild = false;
     this.player = new this.classRoster[this.classIndex].PlayerClass(this);
     this.boss = new this.roster[this.bossIndex].BossClass(this);
+    this.currentTarget = this.boss;
     this.camera.snapTo(this.player);
     this.cacheUI();
     this.buildAbilityBar();
@@ -137,7 +138,8 @@ export class Game {
   refreshAbilityBindings() {
     this.abilityBar?.refreshBindings();
     const movement = ['moveUp', 'moveLeft', 'moveDown', 'moveRight'].map((action) => formatKey(this.input.getBinding(action))).join('/');
-    this.ui.help.innerHTML = `Move: <b>${movement}</b> · Hover for details · <b>Shift + drag</b> abilities to reorder`;
+    const targetKey = formatKey(this.input.getBinding('targetNext'));
+    this.ui.help.innerHTML = `Move: <b>${movement}</b> · Target: <b>${targetKey}</b> · Hover for details · <b>Shift + drag</b> abilities to reorder`;
   }
 
   handleAbilityInput() {
@@ -151,6 +153,54 @@ export class Game {
   getEncounterTargets() {
     const targets = this.player.getEncounterTargets?.() ?? [this.player];
     return targets.filter((target) => target?.alive !== false && typeof target?.takeDamage === 'function');
+  }
+
+  getHostileTargets() {
+    const supplied = this.boss?.getHostileTargets?.();
+    const candidates = Array.isArray(supplied)
+      ? supplied
+      : [this.boss, ...(Array.isArray(this.boss?.adds) ? this.boss.adds : [])];
+
+    const seen = new Set();
+    return candidates.filter((target) => {
+      if (!target || seen.has(target)) return false;
+      seen.add(target);
+      return target.alive !== false
+        && target.targetable !== false
+        && Number.isFinite(target.x)
+        && Number.isFinite(target.y)
+        && typeof target.takeDamage === 'function';
+    });
+  }
+
+  getTargetName(target = this.currentTarget) {
+    return target?.config?.name ?? target?.name ?? 'Enemy';
+  }
+
+  ensureCombatTarget() {
+    const targets = this.getHostileTargets();
+    if (!targets.length) {
+      this.currentTarget = null;
+      return null;
+    }
+    if (!targets.includes(this.currentTarget)) this.currentTarget = targets[0];
+    return this.currentTarget;
+  }
+
+  getCombatTarget() {
+    return this.ensureCombatTarget();
+  }
+
+  cycleTarget() {
+    const targets = this.getHostileTargets();
+    if (!targets.length) {
+      this.currentTarget = null;
+      return null;
+    }
+    const currentIndex = targets.indexOf(this.currentTarget);
+    this.currentTarget = targets[(currentIndex + 1 + targets.length) % targets.length];
+    this.flashMessage(`Target: ${this.getTargetName(this.currentTarget)}`, 0.8);
+    return this.currentTarget;
   }
 
   selectClass(index) {
@@ -186,6 +236,7 @@ export class Game {
     this.player.reset();
     this.buildAbilityBar();
     this.boss = new entry.BossClass(this);
+    this.currentTarget = this.boss;
     this.projectiles = [];
     this.effects = [];
     this.floatingTexts = [];
@@ -204,11 +255,14 @@ export class Game {
     this.lastTime = now;
     this.time += dt;
     if (this.state === 'playing') {
+      this.ensureCombatTarget();
+      if (this.input.consumeAction('targetNext')) this.cycleTarget();
       this.player.update(dt, this.input);
       const specialInputHandled = this.player.handleSpecialInput?.(this.input) === true;
       if (!specialInputHandled) this.handleAbilityInput();
       this.flushAbilityBarRebuild();
       this.boss.update(dt);
+      this.ensureCombatTarget();
       this.updateParticles(dt);
       this.camera.update(dt, this.player);
     }
@@ -229,8 +283,16 @@ export class Game {
     this.floatingTexts = this.floatingTexts.filter((text) => text.remaining > 0);
   }
 
-  damageBoss(amount) { if (this.state === 'playing' && this.boss.alive) this.boss.takeDamage(amount); }
-  spawnProjectile(from, to, color, duration) { this.projectiles.push({ sx: from.x, sy: from.y, ex: to.x, ey: to.y, color, duration, t: 0 }); }
+  damageBoss(amount, source = 'Player') {
+    const target = this.getCombatTarget();
+    if (this.state === 'playing' && target?.alive !== false) target.takeDamage(amount, source);
+  }
+
+  spawnProjectile(from, to, color, duration) {
+    const target = to === this.boss ? (this.getCombatTarget() ?? to) : to;
+    this.projectiles.push({ sx: from.x, sy: from.y, ex: target.x, ey: target.y, color, duration, t: 0 });
+  }
+
   spawnBurst(x, y, color, radius = 54) { this.effects.push({ type: 'burst', x, y, color, radius, duration: 0.45, remaining: 0.45 }); }
   spawnArenaFlash(color) { this.effects.push({ type: 'flash', color, duration: 0.22, remaining: 0.22 }); }
   spawnFloatingText(x, y, text, color) { this.floatingTexts.push({ x, y, text, color, remaining: 0.75, duration: 0.75 }); }
@@ -260,6 +322,7 @@ export class Game {
     this.drawArena(ctx);
     this.boss.drawTelegraph(ctx);
     if (this.boss.alive) this.boss.draw(ctx);
+    this.drawTargetIndicator(ctx);
     if (this.player.alive) this.player.draw(ctx);
     this.drawProjectiles(ctx);
     this.drawEffects(ctx);
@@ -282,6 +345,32 @@ export class Game {
     ctx.strokeStyle = 'rgba(155,105,230,.12)';
     ctx.lineWidth = 2;
     ctx.beginPath(); ctx.arc(this.worldWidth / 2, this.worldHeight / 2, Math.min(this.worldWidth, this.worldHeight) * 0.34, 0, Math.PI * 2); ctx.stroke();
+  }
+
+  drawTargetIndicator(ctx) {
+    const target = this.getCombatTarget();
+    if (!target) return;
+
+    const radius = target.config?.radius ?? target.radius ?? 28;
+    const pulse = 4 + Math.sin(this.time * 6) * 3;
+    const ringRadius = radius + 18 + pulse;
+
+    ctx.save();
+    ctx.strokeStyle = '#ffd76a';
+    ctx.fillStyle = '#ffd76a';
+    ctx.lineWidth = 4;
+    ctx.shadowBlur = 12;
+    ctx.shadowColor = '#ffd76a';
+    ctx.setLineDash([9, 7]);
+    ctx.beginPath();
+    ctx.arc(target.x, target.y, ringRadius, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.shadowBlur = 0;
+    ctx.font = '800 13px system-ui';
+    ctx.textAlign = 'center';
+    ctx.fillText(`TARGET · ${this.getTargetName(target)}`, target.x, target.y - ringRadius - 12);
+    ctx.restore();
   }
 
   drawProjectiles(ctx) {
