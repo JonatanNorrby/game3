@@ -74,6 +74,17 @@ export class ArcaneMage {
     };
   }
 
+  getAbilityAvailability(id) {
+    const ability = C.abilities[id];
+    if (!ability || !this.alive || !this.game.boss?.alive) return { available: false, reason: 'Unavailable' };
+    if (this.cast) return { available: false, reason: 'Already casting' };
+    if ((this.cooldowns[id] ?? 0) > 0) return { available: false, reason: 'On cooldown' };
+    if ((id === 'renew' || id === 'missiles') && this.getResource(ability.resource) <= 0) {
+      return { available: false, reason: 'Requires Arcane Stacks' };
+    }
+    return { available: true };
+  }
+
   canUse(id) { return this.alive && !this.cast && (this.cooldowns[id] ?? 0) <= 0 && this.game.boss?.alive; }
 
   useRenew() {
