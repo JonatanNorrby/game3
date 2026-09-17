@@ -186,7 +186,6 @@ export class Paladin {
     while (this.bossDot.tickTimer <= 0 && this.bossDot.remaining > -0.001) {
       this.bossDot.tickTimer += this.bossDot.tickEvery;
       this.game.damageBoss(this.bossDot.damagePerTick, C.abilities.brand.name);
-      this.game.spawnFloatingText(this.game.boss.x, this.game.boss.y - 78, `-${this.bossDot.damagePerTick}`, C.visual.holy);
     }
 
     if (this.bossDot.remaining <= 0) this.bossDot = null;
