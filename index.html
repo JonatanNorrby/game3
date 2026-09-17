@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Raidforge Prototype</title>
   <link rel="stylesheet" href="./styles.css" />
+  <link rel="stylesheet" href="./styles/hud.css" />
 </head>
 <body>
   <main id="app">
@@ -13,23 +14,17 @@
       <div id="banner" class="banner hidden"></div>
     </section>
 
-    <header class="topbar hud-panel">
-      <div>
-        <strong>RAIDFORGE</strong>
-        <span class="muted">solo raid prototype</span>
-      </div>
+    <header class="topbar hud-panel hud-customizable" data-hud-id="topbar">
+      <div><strong>RAIDFORGE</strong><span class="muted">solo raid prototype</span></div>
       <div class="topbar-right">
         <span id="encounter-label">Boss 1 / 1</span>
-        <span id="version-label" data-game-version>v0.2.0</span>
+        <span id="version-label" data-game-version>v0.3.0</span>
         <button id="hud-menu-button" class="hud-menu-button" type="button">Menu</button>
       </div>
     </header>
 
-    <section class="boss-frame hud-panel">
-      <div class="boss-name-row">
-        <span id="boss-name">Arcane Warden</span>
-        <span id="boss-hp-text">100%</span>
-      </div>
+    <section class="boss-frame hud-panel hud-customizable" data-hud-id="boss">
+      <div class="boss-name-row"><span id="boss-name">Arcane Warden</span><span id="boss-hp-text">100%</span></div>
       <div class="bar"><div id="boss-hp" class="bar-fill boss-fill"></div></div>
       <div id="boss-cast-wrap" class="cast-wrap hidden">
         <div class="cast-label"><span id="boss-cast-name"></span><span id="boss-cast-time"></span></div>
@@ -37,16 +32,16 @@
       </div>
     </section>
 
-    <section class="player-ui hud-panel">
-      <div class="player-status">
-        <div class="status-line"><strong>Arcane Mage</strong><span id="player-hp-text">100 / 100</span></div>
-        <div class="bar"><div id="player-hp" class="bar-fill player-fill"></div></div>
-        <div id="player-cast-wrap" class="cast-wrap hidden">
-          <div class="cast-label"><span id="player-cast-name"></span><span id="player-cast-time"></span></div>
-          <div class="bar small"><div id="player-cast" class="bar-fill player-cast-fill"></div></div>
-        </div>
+    <section class="player-frame hud-panel hud-customizable" data-hud-id="player">
+      <div class="status-line"><strong>Arcane Mage</strong><span id="player-hp-text">100 / 100</span></div>
+      <div class="bar"><div id="player-hp" class="bar-fill player-fill"></div></div>
+      <div id="player-cast-wrap" class="cast-wrap hidden">
+        <div class="cast-label"><span id="player-cast-name"></span><span id="player-cast-time"></span></div>
+        <div class="bar small"><div id="player-cast" class="bar-fill player-cast-fill"></div></div>
       </div>
+    </section>
 
+    <section class="action-bar hud-panel hud-customizable" data-hud-id="actions">
       <div id="abilities" class="abilities" aria-label="Abilities"></div>
       <div id="controls-help" class="help"></div>
     </section>
@@ -60,34 +55,40 @@
           <button id="menu-play" class="menu-primary" type="button">Choose Boss</button>
           <button id="menu-settings-button" type="button">Settings</button>
         </div>
-        <div class="menu-version" data-game-version>v0.2.0</div>
+        <div class="menu-version" data-game-version>v0.3.0</div>
       </div>
 
       <div id="menu-bosses" class="menu-card menu-view menu-wide hidden">
-        <div class="menu-heading-row">
-          <div>
-            <div class="menu-kicker">Boss Rush</div>
-            <h2>Choose Encounter</h2>
-          </div>
-          <button id="boss-back" class="menu-back" type="button">Back</button>
-        </div>
+        <div class="menu-heading-row"><div><div class="menu-kicker">Boss Rush</div><h2>Choose Encounter</h2></div><button id="boss-back" class="menu-back" type="button">Back</button></div>
         <p class="menu-copy">Future encounters can remain locked here until their progression requirement is met.</p>
         <div id="boss-list" class="boss-list"></div>
       </div>
 
       <div id="menu-settings" class="menu-card menu-view menu-wide hidden">
-        <div class="menu-heading-row">
-          <div>
-            <div class="menu-kicker">Settings</div>
-            <h2>Keybinds</h2>
-          </div>
-          <button id="settings-back" class="menu-back" type="button">Back</button>
-        </div>
+        <div class="menu-heading-row"><div><div class="menu-kicker">Settings</div><h2>Controls & UI</h2></div><button id="settings-back" class="menu-back" type="button">Back</button></div>
         <p class="menu-copy">Click any binding, then press the key you want. Conflicting bindings are automatically swapped.</p>
         <div id="keybind-list" class="keybind-list"></div>
-        <button id="reset-keybinds" class="reset-button" type="button">Reset Defaults</button>
+        <div class="settings-actions">
+          <button id="reset-keybinds" class="reset-button" type="button">Reset Keybinds</button>
+          <button id="customize-hud" class="reset-button ui-customize-button" type="button">Customize HUD</button>
+        </div>
       </div>
     </section>
+
+    <aside id="hud-customizer" class="hud-customizer hidden" aria-label="HUD customizer">
+      <div class="hud-customizer-kicker">UI Customizer</div>
+      <h2 id="hud-selected-label">Top Bar</h2>
+      <p>Drag any outlined HUD element. Select an element here to adjust its presentation.</p>
+      <div id="hud-element-list" class="hud-element-list"></div>
+      <label class="hud-control"><span>Scale <b id="hud-scale-value">100%</b></span><input id="hud-scale" type="range" min="0.55" max="1.6" step="0.05" value="1"></label>
+      <label class="hud-control"><span>Opacity <b id="hud-opacity-value">100%</b></span><input id="hud-opacity" type="range" min="0.2" max="1" step="0.05" value="1"></label>
+      <label class="hud-visible-control"><input id="hud-visible" type="checkbox" checked><span>Visible in combat</span></label>
+      <div class="hud-customizer-actions">
+        <button id="hud-reset-selected" type="button">Reset Selected</button>
+        <button id="hud-reset-all" type="button">Reset All</button>
+        <button id="hud-customizer-done" class="menu-primary" type="button">Done</button>
+      </div>
+    </aside>
   </main>
 
   <script type="module" src="./src/main.js"></script>
