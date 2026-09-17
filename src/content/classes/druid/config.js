@@ -10,6 +10,7 @@ export const DRUID_CONFIG = {
   id: 'druid',
   name: 'Druid',
   role: 'Shapeshifter / adaptive',
+  maxAbilitySlots: 6,
   maxHealth: 115,
   moveSpeed: 245,
   radius: 19,
