@@ -1,0 +1,43 @@
+/* HUD presentation and customization layer. Base menus, bars and palette remain in styles.css. */
+.hud-customizable { position:absolute !important; left:var(--hud-x,50vw) !important; top:var(--hud-y,50vh) !important; right:auto !important; bottom:auto !important; transform:translate(-50%,-50%) scale(var(--hud-scale,1)) !important; transform-origin:center; opacity:var(--hud-opacity,1); transition:opacity .12s ease,outline-color .12s ease; }
+.topbar.hud-customizable { width:min(1400px,calc(100vw - 36px)); }
+.boss-frame.hud-customizable { width:min(760px,calc(100vw - 420px)); min-width:420px; }
+.player-frame { width:min(520px,calc(100vw - 40px)); padding:10px 12px; border-radius:9px; pointer-events:none; }
+.action-bar { width:min(620px,calc(100vw - 40px)); padding:9px 12px 8px; border-radius:9px; pointer-events:none; }
+.action-bar .abilities { display:flex; justify-content:center; align-items:center; gap:7px; width:100%; margin:0; }
+.action-bar .ability { position:relative; flex:0 0 58px; width:58px; height:58px; min-height:0; padding:0; border:1px solid #596486; border-radius:7px; background:#12182a; overflow:visible; pointer-events:auto; }
+.action-bar .ability:hover { border-color:#a997e3; box-shadow:0 0 0 1px rgba(169,151,227,.3),0 8px 24px rgba(0,0,0,.35); }
+.ability-icon { display:block; width:100%; height:100%; border-radius:6px; object-fit:cover; user-select:none; }
+.ability-key { position:absolute; right:3px; bottom:2px; top:auto; min-width:18px; padding:1px 4px; border-radius:4px; background:rgba(2,5,13,.82); color:#f0f3ff; font-size:11px; line-height:16px; text-align:center; text-shadow:0 1px 2px #000; z-index:3; }
+.ability-cd { position:absolute; inset:0; display:grid; place-items:center; border-radius:6px; background:rgba(4,7,16,.7); font-size:20px; font-weight:850; pointer-events:none; z-index:2; }
+.ability-tooltip { position:absolute; left:50%; bottom:calc(100% + 10px); width:245px; transform:translateX(-50%) translateY(4px); padding:11px 12px; border:1px solid #68759a; border-radius:7px; background:rgba(7,10,21,.97); box-shadow:0 16px 36px rgba(0,0,0,.52); color:#edf1ff; text-align:left; pointer-events:none; opacity:0; visibility:hidden; transition:opacity .1s ease,transform .1s ease,visibility .1s; z-index:100; }
+.ability:hover .ability-tooltip,.ability:focus-visible .ability-tooltip { opacity:1; visibility:visible; transform:translateX(-50%) translateY(0); }
+.ability-tooltip strong { display:block; color:#e2d7ff; font-size:14px; margin-bottom:5px; }
+.ability-tooltip-description { display:block; color:#b5bfdc; font-size:12px; line-height:1.4; }
+.ability-tooltip-meta { display:block; margin-top:8px; color:#8694bb; font-size:10px; text-transform:uppercase; letter-spacing:.05em; }
+.action-bar .help { margin-top:6px; font-size:10px; }
+.settings-actions { display:grid; grid-template-columns:1fr 1fr; gap:9px; margin-top:14px; }
+.settings-actions .reset-button { margin-top:0; }
+.ui-customize-button { border-color:#7563a9; background:linear-gradient(180deg,#30284f,#211c39); }
+.hud-user-hidden { display:none !important; }
+.hud-editing .hud-user-hidden { display:block !important; opacity:.22 !important; }
+.hud-editing .hud-customizable { pointer-events:auto !important; cursor:move; outline:2px dashed rgba(145,159,205,.66); outline-offset:4px; }
+.hud-editing .hud-customizable::after { content:attr(data-hud-id); position:absolute; left:0; top:-23px; padding:3px 7px; border-radius:4px; background:#11172a; color:#9eabd0; font-size:9px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; pointer-events:none; }
+.hud-editing .hud-customizable.hud-selected { outline-color:#c0a8ff; box-shadow:0 0 0 1px rgba(192,168,255,.2),0 8px 34px rgba(0,0,0,.4); }
+.hud-editing .ability,.hud-editing .hud-menu-button { pointer-events:none !important; }
+.hud-editing .ability-tooltip { display:none; }
+.hud-customizer { position:absolute; z-index:80; top:20px; right:20px; width:310px; max-height:calc(100vh - 40px); overflow:auto; padding:20px; border:1px solid #657097; border-radius:10px; background:rgba(8,12,25,.96); box-shadow:0 20px 60px rgba(0,0,0,.58); backdrop-filter:blur(8px); }
+.hud-customizer-kicker { color:#9aa6cc; text-transform:uppercase; letter-spacing:.16em; font-size:10px; font-weight:800; }
+.hud-customizer h2 { margin:5px 0 8px; color:#e5dcff; }
+.hud-customizer p { margin:0 0 15px; color:#919dbd; font-size:12px; line-height:1.45; }
+.hud-element-list { display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:18px; }
+.hud-element-button,.hud-customizer-actions button { border:1px solid #4b5677; border-radius:6px; background:#151c30; color:#dde3f8; padding:8px 9px; cursor:pointer; font:inherit; font-size:11px; font-weight:750; }
+.hud-element-button:hover,.hud-element-button.selected,.hud-customizer-actions button:hover { border-color:#9b8acb; background:#282241; }
+.hud-control { display:grid; gap:7px; margin:13px 0; }
+.hud-control>span { display:flex; justify-content:space-between; color:#c4cce4; font-size:12px; }
+.hud-control input[type="range"] { width:100%; accent-color:#9a82dd; }
+.hud-visible-control { display:flex; align-items:center; gap:9px; margin:15px 0; color:#c4cce4; font-size:12px; }
+.hud-visible-control input { accent-color:#9a82dd; }
+.hud-customizer-actions { display:grid; grid-template-columns:1fr 1fr; gap:7px; margin-top:18px; }
+.hud-customizer-actions .menu-primary { grid-column:1/-1; border-color:#826bbd; background:linear-gradient(180deg,#4c3d7c,#322852); }
+@media (max-height:760px) { .action-bar .ability { flex-basis:52px; width:52px; height:52px; } .hud-customizer { top:10px; right:10px; max-height:calc(100vh - 20px); } }
