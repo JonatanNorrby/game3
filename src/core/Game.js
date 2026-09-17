@@ -1,7 +1,8 @@
 import { Input } from './Input.js';
+import { formatKey } from './keybindings.js';
 import { ArcaneMage } from '../content/classes/arcane-mage/ArcaneMage.js';
 import { ARCANE_MAGE_CONFIG } from '../content/classes/arcane-mage/config.js';
-import { ArcaneWarden } from '../content/bosses/arcane-warden/ArcaneWarden.js';
+import { BOSS_ROSTER } from '../content/bosses/roster.js';
 
 export class Game {
   constructor(canvas, viewport = {}) {
@@ -16,21 +17,21 @@ export class Game {
     this.time = 0;
     this.lastTime = performance.now();
     this.shake = 0;
-    this.state = 'playing';
+    this.state = 'menu';
     this.projectiles = [];
     this.effects = [];
     this.floatingTexts = [];
     this.flashTimer = 0;
 
-    // Boss-rush roster: add future boss constructors here.
-    this.roster = [ArcaneWarden];
+    this.roster = BOSS_ROSTER;
     this.bossIndex = 0;
     this.player = new ArcaneMage(this);
-    this.boss = new this.roster[this.bossIndex](this);
+    this.boss = new this.roster[this.bossIndex].BossClass(this);
 
     this.cacheUI();
     this.buildAbilityBar();
     this.bindUI();
+    this.input.onBindingsChanged(() => this.refreshAbilityBindings());
     this.updateUI();
   }
 
@@ -88,38 +89,82 @@ export class Game {
       bossCastWrap: id('boss-cast-wrap'), bossCastName: id('boss-cast-name'), bossCastTime: id('boss-cast-time'), bossCast: id('boss-cast'),
       playerHp: id('player-hp'), playerHpText: id('player-hp-text'),
       playerCastWrap: id('player-cast-wrap'), playerCastName: id('player-cast-name'), playerCastTime: id('player-cast-time'), playerCast: id('player-cast'),
-      abilities: id('abilities'), banner: id('banner'), encounterLabel: id('encounter-label'),
+      abilities: id('abilities'), banner: id('banner'), encounterLabel: id('encounter-label'), help: id('controls-help'),
     };
   }
 
   bindUI() {
     this.ui.banner.addEventListener('click', () => {
-      if (this.state !== 'playing') this.restartEncounter();
+      if (this.state === 'defeat' || this.state === 'victory') this.restartEncounter();
     });
   }
 
   buildAbilityBar() {
     this.ui.abilities.innerHTML = '';
-    for (const [id, ability] of Object.entries(ARCANE_MAGE_CONFIG.abilities)) {
+    Object.entries(ARCANE_MAGE_CONFIG.abilities).forEach(([id, ability], index) => {
+      const action = `ability${index + 1}`;
       const button = document.createElement('button');
       button.className = 'ability';
       button.dataset.ability = id;
+      button.dataset.action = action;
       button.innerHTML = `
-        <span class="ability-key">${ability.key}</span>
+        <span class="ability-key"></span>
         <span class="ability-name">${ability.name}</span>
         <span class="ability-desc">${ability.description}</span>
         <span class="ability-cd hidden"></span>`;
       button.addEventListener('click', () => {
+        if (this.state !== 'playing') return;
         const method = {
           renew: 'useRenew', directHeal: 'useDirectHeal', barrage: 'useBarrage', filler: 'useFiller', teleport: 'useTeleport',
         }[id];
         this.player[method]();
       });
       this.ui.abilities.appendChild(button);
-    }
+    });
+
+    this.refreshAbilityBindings();
   }
 
-  start() { requestAnimationFrame((now) => this.loop(now)); }
+  refreshAbilityBindings() {
+    for (const button of this.ui.abilities.querySelectorAll('.ability')) {
+      button.querySelector('.ability-key').textContent = formatKey(this.input.getBinding(button.dataset.action));
+    }
+
+    const movement = ['moveUp', 'moveLeft', 'moveDown', 'moveRight']
+      .map((action) => formatKey(this.input.getBinding(action)))
+      .join('/');
+    const abilities = [1, 2, 3, 4, 5]
+      .map((number) => formatKey(this.input.getBinding(`ability${number}`)))
+      .join('/');
+    this.ui.help.innerHTML = `Move: <b>${movement}</b> · Abilities: <b>${abilities}</b> · Moving cancels cast-time spells`;
+  }
+
+  enterMenu() {
+    this.state = 'menu';
+    this.input.clear();
+    this.ui.banner.classList.add('hidden');
+  }
+
+  startEncounter(index = this.bossIndex) {
+    const entry = this.roster[index];
+    if (!entry?.unlocked) return false;
+
+    this.bossIndex = index;
+    this.player.reset();
+    this.boss = new entry.BossClass(this);
+    this.projectiles = [];
+    this.effects = [];
+    this.floatingTexts = [];
+    this.state = 'playing';
+    this.input.clear();
+    this.ui.banner.classList.add('hidden');
+    this.flashMessage('Pull started', 1.4);
+    return true;
+  }
+
+  start() {
+    requestAnimationFrame((now) => this.loop(now));
+  }
 
   loop(now) {
     const dt = Math.min(0.033, (now - this.lastTime) / 1000);
@@ -193,14 +238,7 @@ export class Game {
   }
 
   restartEncounter() {
-    this.player.reset();
-    this.boss = new this.roster[this.bossIndex](this);
-    this.projectiles = [];
-    this.effects = [];
-    this.floatingTexts = [];
-    this.state = 'playing';
-    this.ui.banner.classList.add('hidden');
-    this.flashMessage('Pull started', 1.4);
+    this.startEncounter(this.bossIndex);
   }
 
   draw() {
