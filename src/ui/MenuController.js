@@ -85,7 +85,14 @@ export class MenuController {
 
   renderKeybinds() {
     this.keybindList.innerHTML = '';
-    for (const definition of KEYBIND_DEFINITIONS) {
+    const slotCount = this.game.abilityBar?.slotCount ?? 0;
+    const visibleDefinitions = KEYBIND_DEFINITIONS.filter((definition) => {
+      if (!definition.id.startsWith('ability')) return true;
+      const slot = Number(definition.id.replace('ability', ''));
+      return slot <= slotCount;
+    });
+
+    for (const definition of visibleDefinitions) {
       const row = document.createElement('div');
       row.className = 'keybind-row';
       const label = document.createElement('span');
