@@ -2,10 +2,11 @@ import { Input } from './Input.js';
 import { Camera } from './Camera.js';
 import { formatKey } from './keybindings.js';
 import { GAME_CONFIG } from '../config/game.js';
-import { ArcaneMage } from '../content/classes/arcane-mage/ArcaneMage.js';
-import { ARCANE_MAGE_CONFIG } from '../content/classes/arcane-mage/config.js';
+import { CLASS_ROSTER } from '../content/classes/roster.js';
 import { BOSS_ROSTER } from '../content/bosses/roster.js';
 import { AbilityBar } from '../ui/AbilityBar.js';
+
+const SELECTED_CLASS_STORAGE_KEY = 'raidforge.selected-class.v1';
 
 export class Game {
   constructor(canvas, viewport = {}) {
@@ -15,6 +16,8 @@ export class Game {
     this.height = Math.max(1, Math.round(viewport.height ?? window.innerHeight ?? 720));
     this.pixelRatio = Math.max(1, Math.min(viewport.pixelRatio ?? window.devicePixelRatio ?? 1, 2));
 
+    this.classRoster = CLASS_ROSTER;
+    this.classIndex = this.loadSelectedClassIndex();
     this.roster = BOSS_ROSTER;
     this.bossIndex = 0;
     this.currentArena = this.roster[this.bossIndex]?.config?.arena ?? GAME_CONFIG.world;
@@ -38,7 +41,7 @@ export class Game {
     this.effects = [];
     this.floatingTexts = [];
     this.flashTimer = 0;
-    this.player = new ArcaneMage(this);
+    this.player = new this.classRoster[this.classIndex].PlayerClass(this);
     this.boss = new this.roster[this.bossIndex].BossClass(this);
     this.camera.snapTo(this.player);
     this.cacheUI();
@@ -46,6 +49,24 @@ export class Game {
     this.bindUI();
     this.input.onBindingsChanged(() => this.refreshAbilityBindings());
     this.updateUI();
+  }
+
+  loadSelectedClassIndex() {
+    try {
+      const savedId = localStorage.getItem(SELECTED_CLASS_STORAGE_KEY);
+      const index = this.classRoster.findIndex((entry) => entry.id === savedId);
+      return index >= 0 ? index : 0;
+    } catch {
+      return 0;
+    }
+  }
+
+  saveSelectedClass() {
+    try {
+      localStorage.setItem(SELECTED_CLASS_STORAGE_KEY, this.classRoster[this.classIndex].id);
+    } catch {
+      // Class selection still works for the current session if storage is unavailable.
+    }
   }
 
   configureSurface() {
@@ -70,7 +91,9 @@ export class Game {
     this.ui = {
       bossName: id('boss-name'), bossHp: id('boss-hp'), bossHpText: id('boss-hp-text'),
       bossCastWrap: id('boss-cast-wrap'), bossCastName: id('boss-cast-name'), bossCastTime: id('boss-cast-time'), bossCast: id('boss-cast'),
-      playerHp: id('player-hp'), playerHpText: id('player-hp-text'),
+      playerName: id('player-name'), playerHp: id('player-hp'), playerHpText: id('player-hp-text'),
+      playerResourceWrap: id('player-resource-wrap'), playerResourceName: id('player-resource-name'),
+      playerResourceText: id('player-resource-text'), playerResource: id('player-resource'),
       playerCastWrap: id('player-cast-wrap'), playerCastName: id('player-cast-name'), playerCastTime: id('player-cast-time'), playerCast: id('player-cast'),
       abilities: id('abilities'), banner: id('banner'), encounterLabel: id('encounter-label'), help: id('controls-help'),
     };
@@ -85,8 +108,8 @@ export class Game {
   buildAbilityBar() {
     this.abilityBar = new AbilityBar({
       container: this.ui.abilities,
-      classId: ARCANE_MAGE_CONFIG.id,
-      abilities: ARCANE_MAGE_CONFIG.abilities,
+      classId: this.player.config.id,
+      abilities: this.player.config.abilities,
       input: this.input,
       onUse: (abilityId) => {
         if (this.state === 'playing') this.player.useAbility(abilityId);
@@ -107,6 +130,18 @@ export class Game {
       const abilityId = this.abilityBar.getAbilityIdAtSlot(slot);
       if (abilityId) this.player.useAbility(abilityId);
     }
+  }
+
+  selectClass(index) {
+    const entry = this.classRoster[index];
+    if (!entry) return false;
+    this.classIndex = index;
+    this.saveSelectedClass();
+    this.player = new entry.PlayerClass(this);
+    this.buildAbilityBar();
+    this.camera.snapTo(this.player);
+    this.updateUI();
+    return true;
   }
 
   enterMenu() {
@@ -182,11 +217,13 @@ export class Game {
     this.ui.banner.textContent = `WIPED\n${source}\n\nClick to retry`;
     this.ui.banner.classList.remove('hidden');
   }
+
   onBossDefeated() {
     this.state = 'victory';
     this.ui.banner.textContent = `BOSS DEFEATED\nPrototype clear\n\nClick to run it again`;
     this.ui.banner.classList.remove('hidden');
   }
+
   restartEncounter() { this.startEncounter(this.bossIndex); }
 
   draw() {
@@ -257,15 +294,32 @@ export class Game {
     ctx.save(); ctx.globalAlpha = Math.min(1, this.flashTimer * 2); ctx.font = '800 26px system-ui'; ctx.textAlign = 'center'; ctx.fillStyle = '#eef2ff'; ctx.shadowBlur = 12; ctx.shadowColor = '#000'; ctx.fillText(this.flashText, this.width / 2, 128); ctx.restore();
   }
 
+  updatePrimaryResourceUI() {
+    const resource = this.player.getPrimaryResourceState?.() ?? null;
+    if (!resource) {
+      this.ui.playerResourceWrap.classList.add('hidden');
+      return;
+    }
+
+    const pct = resource.max > 0 ? Math.max(0, Math.min(100, resource.current / resource.max * 100)) : 0;
+    this.ui.playerResourceWrap.classList.remove('hidden');
+    this.ui.playerResourceName.textContent = resource.label;
+    this.ui.playerResourceText.textContent = `${Math.ceil(resource.current)} / ${resource.max}`;
+    this.ui.playerResource.style.width = `${pct}%`;
+    this.ui.playerResource.style.background = resource.color ?? '#5477df';
+  }
+
   updateUI() {
     const bossPct = Math.max(0, this.boss.health / this.boss.config.maxHealth * 100);
     const playerPct = Math.max(0, this.player.health / this.player.config.maxHealth * 100);
     this.ui.bossName.textContent = this.boss.config.name;
     this.ui.bossHp.style.width = `${bossPct}%`;
     this.ui.bossHpText.textContent = `${Math.ceil(bossPct)}%`;
+    this.ui.playerName.textContent = this.player.config.name;
     this.ui.playerHp.style.width = `${playerPct}%`;
     this.ui.playerHpText.textContent = `${Math.ceil(this.player.health)} / ${this.player.config.maxHealth}`;
     this.ui.encounterLabel.textContent = `Boss ${this.bossIndex + 1} / ${this.roster.length}`;
+    this.updatePrimaryResourceUI();
     this.updateCastUI(this.ui.bossCastWrap, this.ui.bossCastName, this.ui.bossCastTime, this.ui.bossCast, this.boss.cast);
     this.updateCastUI(this.ui.playerCastWrap, this.ui.playerCastName, this.ui.playerCastTime, this.ui.playerCast, this.player.cast);
     this.abilityBar.updateCooldowns(this.player.cooldowns);
