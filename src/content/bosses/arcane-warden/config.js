@@ -4,7 +4,7 @@ export const ARCANE_WARDEN_CONFIG = {
   name: 'Arcane Warden',
   maxHealth: 1700,
   radius: 46,
-  position: { x: 640, y: 190 },
+  position: { x: 0.5, y: 0.26 },
   visual: {
     body: '#b05a9e',
     core: '#f1b0e5',
