@@ -42,7 +42,6 @@ export class Game {
     this.floatingTexts = [];
     this.flashTimer = 0;
     this.pendingAbilityBarRebuild = false;
-    this.globalCooldownRemaining = 0;
     this.player = new this.classRoster[this.classIndex].PlayerClass(this);
     this.boss = new this.roster[this.bossIndex].BossClass(this);
     this.currentTarget = this.boss;
@@ -149,24 +148,11 @@ export class Game {
   }
 
   usePlayerAbility(abilityId) {
-    if (this.globalCooldownRemaining > 0.05) {
-      this.flashMessage(`GLOBAL COOLDOWN · ${this.globalCooldownRemaining.toFixed(1)}s`, 0.45);
-      return false;
-    }
     if (this.isPlayerSilenced()) {
       this.flashMessage('SILENCED — leave the green zone', 0.9);
       return false;
     }
-
-    const availability = this.player.getAbilityAvailability?.(abilityId) ?? { available: true };
-    const classCanUse = typeof this.player.canUse === 'function' ? this.player.canUse(abilityId) : true;
-    if (availability.available === false || classCanUse === false) {
-      this.player.useAbility(abilityId);
-      return false;
-    }
-
     this.player.useAbility(abilityId);
-    this.globalCooldownRemaining = GAME_CONFIG.combat?.globalCooldown ?? 1;
     return true;
   }
 
@@ -245,7 +231,6 @@ export class Game {
     this.classIndex = index;
     this.saveSelectedClass();
     this.player = new entry.PlayerClass(this);
-    this.globalCooldownRemaining = 0;
     this.buildAbilityBar();
     this.camera.snapTo(this.player);
     this.updateUI();
@@ -271,7 +256,6 @@ export class Game {
     this.bossIndex = index;
     this.applyArena(entry);
     this.player.reset();
-    this.globalCooldownRemaining = 0;
     this.buildAbilityBar();
     this.boss = new entry.BossClass(this);
     this.currentTarget = this.boss;
@@ -293,7 +277,6 @@ export class Game {
     this.lastTime = now;
     this.time += dt;
     if (this.state === 'playing') {
-      this.globalCooldownRemaining = Math.max(0, this.globalCooldownRemaining - dt);
       this.ensureCombatTarget();
       if (this.input.consumeAction('targetNext')) this.cycleTarget();
       if (this.input.consumeAction('interact')) this.interactWithTarget();
@@ -366,14 +349,12 @@ export class Game {
   }
 
   onPlayerDefeated(source) {
-    this.globalCooldownRemaining = 0;
     this.state = 'defeat';
     this.ui.banner.textContent = `WIPED\n${source}\n\nClick to retry`;
     this.ui.banner.classList.remove('hidden');
   }
 
   onBossDefeated() {
-    this.globalCooldownRemaining = 0;
     this.state = 'victory';
     this.ui.banner.textContent = `BOSS DEFEATED\nPrototype clear\n\nClick to run it again`;
     this.ui.banner.classList.remove('hidden');
@@ -522,8 +503,8 @@ export class Game {
     this.updateCompanionUI();
     this.updateCastUI(this.ui.bossCastWrap, this.ui.bossCastName, this.ui.bossCastTime, this.ui.bossCast, this.boss.cast);
     this.updateCastUI(this.ui.playerCastWrap, this.ui.playerCastName, this.ui.playerCastTime, this.ui.playerCast, this.player.cast);
-    this.abilityBar.updateCooldowns(this.player.cooldowns, this.globalCooldownRemaining);
-    this.abilityBar.updatePlayerState(this.player, this.globalCooldownRemaining);
+    this.abilityBar.updateCooldowns(this.player.cooldowns);
+    this.abilityBar.updatePlayerState(this.player);
   }
 
   updateCastUI(wrap, name, time, fill, cast) {
